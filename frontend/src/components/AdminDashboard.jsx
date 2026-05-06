@@ -43,7 +43,7 @@ export default function AdminDashboard() {
 
     fetchCats()
       .then(setCategories)
-      .catch(() => {})
+      .catch((e) => setError(e.message))
 
     if (tab === 'orders') {
       useAdminFetch('admin/orders', adminSecret)

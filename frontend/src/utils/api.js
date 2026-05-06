@@ -1,6 +1,6 @@
 // API utility functions for handling different environments
 const API_BASE_URL = 'https://8nhfw2nleg.execute-api.us-east-1.amazonaws.com'
-const S3_BUCKET_URL = 'http://goshretrauntfrontendbucket.s3-website-us-east-1.amazonaws.com/'
+const S3_BUCKET_URL = 'https://goshrestrauntfilebucket.s3.us-east-1.amazonaws.com/'
 
 export const getApiUrl = (path) => {
   // Remove leading slash from path if present

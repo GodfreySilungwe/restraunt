@@ -4,6 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Dict, List, Optional, Any
 import json
+from boto3.dynamodb.conditions import Attr, Key
 
 def _aws_credentials():
     access_key = os.getenv('AWS_ACCESS_KEY_ID')
@@ -29,192 +30,97 @@ table = dynamodb.Table(TABLE_NAME)
 
 def ensure_table_exists():
     """Create DynamoDB table if it doesn't exist."""
-    global table  # Declare global at the beginning
+    global table
     
     try:
-        # Check if table exists
         table.meta.client.describe_table(TableName=TABLE_NAME)
         print(f"Table {TABLE_NAME} already exists.")
     except table.meta.client.exceptions.ResourceNotFoundException:
         print(f"Creating table {TABLE_NAME}...")
-        # Create table with the required schema
         table = dynamodb.create_table(
             TableName=TABLE_NAME,
             KeySchema=[
                 {
                     'AttributeName': 'PK',
-                    'KeyType': 'HASH'  # Partition key
+                    'KeyType': 'HASH'
                 },
                 {
                     'AttributeName': 'SK',
-                    'KeyType': 'RANGE'  # Sort key
+                    'KeyType': 'RANGE'
                 }
             ],
             AttributeDefinitions=[
-                {
-                    'AttributeName': 'PK',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'SK',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'GSI1PK',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'GSI1SK',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'GSI2PK',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'GSI2SK',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'GSI3PK',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'GSI3SK',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'GSI4PK',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'GSI4SK',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'GSI5PK',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'GSI5SK',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'GSI6PK',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'GSI6SK',
-                    'AttributeType': 'S'
-                }
+                {'AttributeName': 'PK', 'AttributeType': 'S'},
+                {'AttributeName': 'SK', 'AttributeType': 'S'},
+                {'AttributeName': 'GSI1PK', 'AttributeType': 'S'},
+                {'AttributeName': 'GSI1SK', 'AttributeType': 'S'},
+                {'AttributeName': 'GSI2PK', 'AttributeType': 'S'},
+                {'AttributeName': 'GSI2SK', 'AttributeType': 'S'},
+                {'AttributeName': 'GSI3PK', 'AttributeType': 'S'},
+                {'AttributeName': 'GSI3SK', 'AttributeType': 'S'},
+                {'AttributeName': 'GSI4PK', 'AttributeType': 'S'},
+                {'AttributeName': 'GSI4SK', 'AttributeType': 'S'},
+                {'AttributeName': 'GSI5PK', 'AttributeType': 'S'},
+                {'AttributeName': 'GSI5SK', 'AttributeType': 'S'},
+                {'AttributeName': 'GSI6PK', 'AttributeType': 'S'},
+                {'AttributeName': 'GSI6SK', 'AttributeType': 'S'}
             ],
             GlobalSecondaryIndexes=[
                 {
                     'IndexName': 'GSI1',
                     'KeySchema': [
-                        {
-                            'AttributeName': 'GSI1PK',
-                            'KeyType': 'HASH'
-                        },
-                        {
-                            'AttributeName': 'GSI1SK',
-                            'KeyType': 'RANGE'
-                        }
+                        {'AttributeName': 'GSI1PK', 'KeyType': 'HASH'},
+                        {'AttributeName': 'GSI1SK', 'KeyType': 'RANGE'}
                     ],
-                    'Projection': {
-                        'ProjectionType': 'ALL'
-                    }
+                    'Projection': {'ProjectionType': 'ALL'}
                 },
                 {
                     'IndexName': 'GSI2',
                     'KeySchema': [
-                        {
-                            'AttributeName': 'GSI2PK',
-                            'KeyType': 'HASH'
-                        },
-                        {
-                            'AttributeName': 'GSI2SK',
-                            'KeyType': 'RANGE'
-                        }
+                        {'AttributeName': 'GSI2PK', 'KeyType': 'HASH'},
+                        {'AttributeName': 'GSI2SK', 'KeyType': 'RANGE'}
                     ],
-                    'Projection': {
-                        'ProjectionType': 'ALL'
-                    }
+                    'Projection': {'ProjectionType': 'ALL'}
                 },
                 {
                     'IndexName': 'GSI3',
                     'KeySchema': [
-                        {
-                            'AttributeName': 'GSI3PK',
-                            'KeyType': 'HASH'
-                        },
-                        {
-                            'AttributeName': 'GSI3SK',
-                            'KeyType': 'RANGE'
-                        }
+                        {'AttributeName': 'GSI3PK', 'KeyType': 'HASH'},
+                        {'AttributeName': 'GSI3SK', 'KeyType': 'RANGE'}
                     ],
-                    'Projection': {
-                        'ProjectionType': 'ALL'
-                    }
+                    'Projection': {'ProjectionType': 'ALL'}
                 },
                 {
                     'IndexName': 'GSI4',
                     'KeySchema': [
-                        {
-                            'AttributeName': 'GSI4PK',
-                            'KeyType': 'HASH'
-                        },
-                        {
-                            'AttributeName': 'GSI4SK',
-                            'KeyType': 'RANGE'
-                        }
+                        {'AttributeName': 'GSI4PK', 'KeyType': 'HASH'},
+                        {'AttributeName': 'GSI4SK', 'KeyType': 'RANGE'}
                     ],
-                    'Projection': {
-                        'ProjectionType': 'ALL'
-                    }
+                    'Projection': {'ProjectionType': 'ALL'}
                 },
                 {
                     'IndexName': 'GSI5',
                     'KeySchema': [
-                        {
-                            'AttributeName': 'GSI5PK',
-                            'KeyType': 'HASH'
-                        },
-                        {
-                            'AttributeName': 'GSI5SK',
-                            'KeyType': 'RANGE'
-                        }
+                        {'AttributeName': 'GSI5PK', 'KeyType': 'HASH'},
+                        {'AttributeName': 'GSI5SK', 'KeyType': 'RANGE'}
                     ],
-                    'Projection': {
-                        'ProjectionType': 'ALL'
-                    }
+                    'Projection': {'ProjectionType': 'ALL'}
                 },
                 {
                     'IndexName': 'GSI6',
                     'KeySchema': [
-                        {
-                            'AttributeName': 'GSI6PK',
-                            'KeyType': 'HASH'
-                        },
-                        {
-                            'AttributeName': 'GSI6SK',
-                            'KeyType': 'RANGE'
-                        }
+                        {'AttributeName': 'GSI6PK', 'KeyType': 'HASH'},
+                        {'AttributeName': 'GSI6SK', 'KeyType': 'RANGE'}
                     ],
-                    'Projection': {
-                        'ProjectionType': 'ALL'
-                    }
+                    'Projection': {'ProjectionType': 'ALL'}
                 }
             ],
             BillingMode='PAY_PER_REQUEST'
         )
         
-        # Wait for table to be created
         print(f"Waiting for table {TABLE_NAME} to be created...")
         table.meta.client.get_waiter('table_exists').wait(TableName=TABLE_NAME)
         print(f"Table {TABLE_NAME} created successfully!")
-        
-        # Update the global table reference
         table = dynamodb.Table(TABLE_NAME)
 
 # S3 setup for file storage
@@ -224,7 +130,6 @@ aws_options = {
 aws_options.update(_aws_credentials())
 
 s3_client = boto3.client('s3', **aws_options)
-
 S3_BUCKET = os.getenv('S3_BUCKET_NAME', 'online-shop-bucket')
 
 class DynamoDBModel:
@@ -244,15 +149,19 @@ class DynamoDBModel:
         return None
 
     @staticmethod
-    def query(pk: str, sk_prefix: str = None) -> List[Dict[str, Any]]:
-        """Query items by partition key, optionally with sort key prefix."""
-        key_condition = boto3.dynamodb.conditions.Key('PK').eq(pk)
+    def query_by_prefix(pk_prefix: str, sk_prefix: str = None) -> List[Dict[str, Any]]:
+        """Query items by partition key prefix, optionally with sort key prefix."""
+        key_condition = Key('PK').begins_with(pk_prefix)
         if sk_prefix:
-            key_condition &= boto3.dynamodb.conditions.Key('SK').begins_with(sk_prefix)
+            key_condition &= Key('SK').begins_with(sk_prefix)
 
-        response = table.query(KeyConditionExpression=key_condition)
-        items = response.get('Items', [])
-        return [DynamoDBModel._process_item_from_dynamodb(item) for item in items]
+        try:
+            response = table.query(KeyConditionExpression=key_condition)
+            items = response.get('Items', [])
+            return [DynamoDBModel._process_item_from_dynamodb(item) for item in items]
+        except Exception as e:
+            print(f"[ERROR] DynamoDBModel.query_by_prefix: {str(e)}")
+            return []
 
     @staticmethod
     def scan(filter_expression=None) -> List[Dict[str, Any]]:
@@ -307,16 +216,14 @@ class DynamoDBModel:
         processed = {}
         for key, value in item.items():
             if isinstance(value, Decimal):
-                # Try to convert to int first, then float
                 if '.' not in str(value):
                     processed[key] = int(value)
                 else:
                     processed[key] = float(value)
             elif isinstance(value, str):
-                # Try to parse as datetime
                 try:
                     datetime.fromisoformat(value)
-                    processed[key] = value  # Keep as string for now
+                    processed[key] = value
                 except:
                     processed[key] = value
             elif isinstance(value, dict):
@@ -331,7 +238,8 @@ class DynamoDBModel:
 class Category:
     @staticmethod
     def create(name: str, position: int = 0) -> Dict[str, Any]:
-        category_id = str(position)  # Simple ID generation
+        import uuid
+        category_id = str(uuid.uuid4())  # Use UUID instead of position for uniqueness
         item = {
             'PK': f'CATEGORY#{category_id}',
             'SK': f'CATEGORY#{category_id}',
@@ -346,11 +254,52 @@ class Category:
 
     @staticmethod
     def get_all() -> List[Dict[str, Any]]:
-        return DynamoDBModel.query('CATEGORY#', 'CATEGORY#')
+        """Get all categories using scan with entity_type filter."""
+        try:
+            response = table.scan(
+                FilterExpression=Attr('entity_type').eq('category')
+            )
+            items = response.get('Items', [])
+            
+            # Sort by position
+            items.sort(key=lambda x: int(x.get('position', 0)))
+            
+            return [{
+                'id': item.get('id'),
+                'name': item.get('name'),
+                'position': int(item.get('position', 0))
+            } for item in items]
+        except Exception as e:
+            print(f"[ERROR] Category.get_all: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return []
 
     @staticmethod
     def get_by_id(category_id: str) -> Optional[Dict[str, Any]]:
         return DynamoDBModel.get_item(f'CATEGORY#{category_id}', f'CATEGORY#{category_id}')
+
+    @staticmethod
+    def update(category_id: str, name: str = None, position: int = None) -> None:
+        """Update category attributes."""
+        update_expr = "SET "
+        attr_values = {}
+        attr_names = {}
+        
+        if name is not None:
+            update_expr += "#name = :name, "
+            attr_values[':name'] = name
+            attr_names['#name'] = 'name'
+        if position is not None:
+            update_expr += "#position = :position, "
+            attr_values[':position'] = position
+            attr_names['#position'] = 'position'
+        
+        update_expr = update_expr.rstrip(', ')
+        DynamoDBModel.update_item(
+            f'CATEGORY#{category_id}', f'CATEGORY#{category_id}',
+            update_expr, attr_values, attr_names if attr_names else None
+        )
 
     @staticmethod
     def delete(category_id: str) -> None:
@@ -359,11 +308,12 @@ class Category:
 class MenuItem:
     @staticmethod
     def create(name: str, description: str, price_cents: int, category_id: str, available: bool = True, image_filename: str = None) -> Dict[str, Any]:
-        item_id = str(int(datetime.utcnow().timestamp() * 1000000))  # Simple ID generation
+        import uuid
+        item_id = str(uuid.uuid4())
         item = {
             'PK': f'MENUITEM#{item_id}',
             'SK': f'MENUITEM#{item_id}',
-            'GSI1PK': f'CATEGORY#{category_id}',  # For querying items by category
+            'GSI1PK': f'CATEGORY#{category_id}',
             'GSI1SK': f'MENUITEM#{item_id}',
             'entity_type': 'menuitem',
             'id': item_id,
@@ -380,14 +330,17 @@ class MenuItem:
 
     @staticmethod
     def get_all() -> List[Dict[str, Any]]:
-        return DynamoDBModel.query('MENUITEM#', 'MENUITEM#')
+        return DynamoDBModel.query_by_prefix('MENUITEM#', 'MENUITEM#')
+
+    @staticmethod
+    def get_by_id(item_id: str) -> Optional[Dict[str, Any]]:
+        return DynamoDBModel.get_item(f'MENUITEM#{item_id}', f'MENUITEM#{item_id}')
 
     @staticmethod
     def get_by_category(category_id: str) -> List[Dict[str, Any]]:
-        # Use GSI to query items by category
         response = table.query(
             IndexName='GSI1',
-            KeyConditionExpression=boto3.dynamodb.conditions.Key('GSI1PK').eq(f'CATEGORY#{category_id}')
+            KeyConditionExpression=Key('GSI1PK').eq(f'CATEGORY#{category_id}')
         )
         items = response.get('Items', [])
         return [DynamoDBModel._process_item_from_dynamodb(item) for item in items]
@@ -398,6 +351,7 @@ class MenuItem:
         update_expr = "SET "
         attr_values = {}
         attr_names = {}
+        
         if name is not None:
             update_expr += "#name = :name, "
             attr_values[':name'] = name
@@ -420,9 +374,12 @@ class MenuItem:
         if image_filename is not None:
             update_expr += "image_filename = :img, "
             attr_values[':img'] = image_filename
+        
         update_expr = update_expr.rstrip(', ')
-        DynamoDBModel.update_item(f'MENUITEM#{item_id}', f'MENUITEM#{item_id}',
-                                 update_expr, attr_values, attr_names if attr_names else None)
+        DynamoDBModel.update_item(
+            f'MENUITEM#{item_id}', f'MENUITEM#{item_id}',
+            update_expr, attr_values, attr_names if attr_names else None
+        )
 
     @staticmethod
     def delete(item_id: str) -> None:
@@ -431,7 +388,8 @@ class MenuItem:
 class Order:
     @staticmethod
     def create(customer_name: str, customer_email: str, customer_phone: str, total_cents: int) -> Dict[str, Any]:
-        order_id = str(int(datetime.utcnow().timestamp() * 1000000))
+        import uuid
+        order_id = str(uuid.uuid4())
         item = {
             'PK': f'ORDER#{order_id}',
             'SK': f'ORDER#{order_id}',
@@ -449,7 +407,7 @@ class Order:
 
     @staticmethod
     def get_all() -> List[Dict[str, Any]]:
-        return DynamoDBModel.query('ORDER#', 'ORDER#')
+        return DynamoDBModel.query_by_prefix('ORDER#', 'ORDER#')
 
     @staticmethod
     def get_by_id(order_id: str) -> Optional[Dict[str, Any]]:
@@ -457,14 +415,17 @@ class Order:
 
     @staticmethod
     def update_status(order_id: str, status: str) -> None:
-        DynamoDBModel.update_item(f'ORDER#{order_id}', f'ORDER#{order_id}',
-                                 "SET #status = :status",
-                                 {':status': status, '#status': 'status'})
+        DynamoDBModel.update_item(
+            f'ORDER#{order_id}', f'ORDER#{order_id}',
+            "SET #status = :status",
+            {':status': status, '#status': 'status'}
+        )
 
 class OrderItem:
     @staticmethod
     def create(order_id: str, menu_item_id: str, qty: int, unit_price_cents: int) -> Dict[str, Any]:
-        item_id = str(int(datetime.utcnow().timestamp() * 1000000))
+        import uuid
+        item_id = str(uuid.uuid4())
         item = {
             'PK': f'ORDER#{order_id}',
             'SK': f'ORDERITEM#{item_id}',
@@ -473,23 +434,25 @@ class OrderItem:
             'order_id': order_id,
             'menu_item_id': menu_item_id,
             'qty': qty,
-            'unit_price_cents': unit_price_cents
+            'unit_price_cents': unit_price_cents,
+            'created_at': datetime.utcnow()
         }
         DynamoDBModel.put_item(item)
         return item
 
     @staticmethod
     def get_by_order(order_id: str) -> List[Dict[str, Any]]:
-        return DynamoDBModel.query(f'ORDER#{order_id}', 'ORDERITEM#')
+        return DynamoDBModel.query_by_prefix(f'ORDER#{order_id}', 'ORDERITEM#')
 
 class Customer:
     @staticmethod
     def create(name: str, email: str, phone: str = None, newsletter: bool = False) -> Dict[str, Any]:
-        customer_id = str(int(datetime.utcnow().timestamp() * 1000000))
+        import uuid
+        customer_id = str(uuid.uuid4())
         item = {
             'PK': f'CUSTOMER#{customer_id}',
             'SK': f'CUSTOMER#{customer_id}',
-            'GSI2PK': f'EMAIL#{email}',  # For querying by email
+            'GSI2PK': f'EMAIL#{email}',
             'GSI2SK': f'CUSTOMER#{customer_id}',
             'entity_type': 'customer',
             'id': customer_id,
@@ -504,10 +467,9 @@ class Customer:
 
     @staticmethod
     def get_by_email(email: str) -> Optional[Dict[str, Any]]:
-        # Use GSI to query by email
         response = table.query(
             IndexName='GSI2',
-            KeyConditionExpression=boto3.dynamodb.conditions.Key('GSI2PK').eq(f'EMAIL#{email}')
+            KeyConditionExpression=Key('GSI2PK').eq(f'EMAIL#{email}')
         )
         items = response.get('Items', [])
         if items:
@@ -521,7 +483,8 @@ class Customer:
 class Reservation:
     @staticmethod
     def create(customer_id: str, time_slot: datetime, table_number: int, guests: int) -> Dict[str, Any]:
-        reservation_id = str(int(datetime.utcnow().timestamp() * 1000000))
+        import uuid
+        reservation_id = str(uuid.uuid4())
         item = {
             'PK': f'RESERVATION#{reservation_id}',
             'SK': f'RESERVATION#{reservation_id}',
@@ -530,7 +493,7 @@ class Reservation:
             'entity_type': 'reservation',
             'id': reservation_id,
             'customer_id': customer_id,
-            'time_slot': time_slot,
+            'time_slot': time_slot.isoformat(),
             'table_number': table_number,
             'guests': guests,
             'created_at': datetime.utcnow()
@@ -540,11 +503,20 @@ class Reservation:
 
     @staticmethod
     def get_all() -> List[Dict[str, Any]]:
-        return DynamoDBModel.query('RESERVATION#', 'RESERVATION#')
+        return DynamoDBModel.query_by_prefix('RESERVATION#', 'RESERVATION#')
 
     @staticmethod
     def get_by_id(reservation_id: str) -> Optional[Dict[str, Any]]:
         return DynamoDBModel.get_item(f'RESERVATION#{reservation_id}', f'RESERVATION#{reservation_id}')
+
+    @staticmethod
+    def get_by_timeslot(time_slot: datetime) -> List[Dict[str, Any]]:
+        response = table.query(
+            IndexName='GSI3',
+            KeyConditionExpression=Key('GSI3PK').eq(f'TIMESLOT#{time_slot.strftime("%Y-%m-%dT%H:%M")}')
+        )
+        items = response.get('Items', [])
+        return [DynamoDBModel._process_item_from_dynamodb(item) for item in items]
 
     @staticmethod
     def delete(reservation_id: str) -> None:
@@ -553,7 +525,8 @@ class Reservation:
 class Promotion:
     @staticmethod
     def create(menu_item_id: str, percent: int, active: bool = True) -> Dict[str, Any]:
-        promo_id = str(int(datetime.utcnow().timestamp() * 1000000))
+        import uuid
+        promo_id = str(uuid.uuid4())
         item = {
             'PK': f'PROMOTION#{promo_id}',
             'SK': f'PROMOTION#{promo_id}',
@@ -571,21 +544,49 @@ class Promotion:
 
     @staticmethod
     def get_active() -> List[Dict[str, Any]]:
-        # Scan for active promotions
         response = table.scan(
-            FilterExpression=boto3.dynamodb.conditions.Attr('entity_type').eq('promotion') &
-                           boto3.dynamodb.conditions.Attr('active').eq(True)
+            FilterExpression=Attr('entity_type').eq('promotion') &
+                           Attr('active').eq(True)
         )
         items = response.get('Items', [])
         return [DynamoDBModel._process_item_from_dynamodb(item) for item in items]
 
     @staticmethod
     def get_all() -> List[Dict[str, Any]]:
-        return DynamoDBModel.query('PROMOTION#', 'PROMOTION#')
+        return DynamoDBModel.query_by_prefix('PROMOTION#', 'PROMOTION#')
 
     @staticmethod
     def get_by_id(promo_id: str) -> Optional[Dict[str, Any]]:
         return DynamoDBModel.get_item(f'PROMOTION#{promo_id}', f'PROMOTION#{promo_id}')
+
+    @staticmethod
+    def get_by_menu_item(menu_item_id: str) -> Optional[Dict[str, Any]]:
+        response = table.query(
+            IndexName='GSI4',
+            KeyConditionExpression=Key('GSI4PK').eq(f'MENUITEM#{menu_item_id}')
+        )
+        items = response.get('Items', [])
+        if items:
+            return DynamoDBModel._process_item_from_dynamodb(items[0])
+        return None
+
+    @staticmethod
+    def update(promo_id: str, percent: int = None, active: bool = None) -> None:
+        update_expr = "SET "
+        attr_values = {}
+        
+        if percent is not None:
+            update_expr += "percent = :percent, "
+            attr_values[':percent'] = percent
+        if active is not None:
+            update_expr += "active = :active, "
+            attr_values[':active'] = active
+        
+        update_expr = update_expr.rstrip(', ')
+        DynamoDBModel.update_item(
+            f'PROMOTION#{promo_id}', f'PROMOTION#{promo_id}',
+            update_expr, attr_values
+        )
 
     @staticmethod
     def delete(promo_id: str) -> None:
@@ -594,7 +595,8 @@ class Promotion:
 class Payment:
     @staticmethod
     def create(order_id: str, transaction_reference: str, payment_method: str, amount_cents: int) -> Dict[str, Any]:
-        payment_id = str(int(datetime.utcnow().timestamp() * 1000000))
+        import uuid
+        payment_id = str(uuid.uuid4())
         item = {
             'PK': f'PAYMENT#{payment_id}',
             'SK': f'PAYMENT#{payment_id}',
@@ -614,7 +616,7 @@ class Payment:
 
     @staticmethod
     def get_all() -> List[Dict[str, Any]]:
-        return DynamoDBModel.query('PAYMENT#', 'PAYMENT#')
+        return DynamoDBModel.query_by_prefix('PAYMENT#', 'PAYMENT#')
 
     @staticmethod
     def get_by_id(payment_id: str) -> Optional[Dict[str, Any]]:
@@ -624,15 +626,31 @@ class Payment:
     def get_by_order(order_id: str) -> List[Dict[str, Any]]:
         response = table.query(
             IndexName='GSI5',
-            KeyConditionExpression=boto3.dynamodb.conditions.Key('GSI5PK').eq(f'ORDER#{order_id}')
+            KeyConditionExpression=Key('GSI5PK').eq(f'ORDER#{order_id}')
         )
         items = response.get('Items', [])
         return [DynamoDBModel._process_item_from_dynamodb(item) for item in items]
 
+    @staticmethod
+    def update_status(payment_id: str, status: str, processed_at: datetime = None) -> None:
+        update_expr = "SET #status = :status"
+        attr_values = {':status': status}
+        attr_names = {'#status': 'status'}
+        
+        if processed_at:
+            update_expr += ", processed_at = :processed_at"
+            attr_values[':processed_at'] = processed_at
+        
+        DynamoDBModel.update_item(
+            f'PAYMENT#{payment_id}', f'PAYMENT#{payment_id}',
+            update_expr, attr_values, attr_names
+        )
+
 class Subscriber:
     @staticmethod
     def create(email: str) -> Dict[str, Any]:
-        sub_id = str(int(datetime.utcnow().timestamp() * 1000000))
+        import uuid
+        sub_id = str(uuid.uuid4())
         item = {
             'PK': f'SUBSCRIBER#{sub_id}',
             'SK': f'SUBSCRIBER#{sub_id}',
@@ -650,12 +668,16 @@ class Subscriber:
     def get_by_email(email: str) -> Optional[Dict[str, Any]]:
         response = table.query(
             IndexName='GSI6',
-            KeyConditionExpression=boto3.dynamodb.conditions.Key('GSI6PK').eq(f'EMAIL#{email}')
+            KeyConditionExpression=Key('GSI6PK').eq(f'EMAIL#{email}')
         )
         items = response.get('Items', [])
         if items:
             return DynamoDBModel._process_item_from_dynamodb(items[0])
         return None
+
+    @staticmethod
+    def get_all() -> List[Dict[str, Any]]:
+        return DynamoDBModel.query_by_prefix('SUBSCRIBER#', 'SUBSCRIBER#')
 
 # Utility functions
 def upload_to_s3(file_content: bytes, filename: str, content_type: str = 'image/jpeg') -> str:
