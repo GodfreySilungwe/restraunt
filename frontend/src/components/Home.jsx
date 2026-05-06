@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { formatMWK } from '../utils/currency'
-import { apiFetch } from '../utils/api'
+import { apiFetch, getImageSources } from '../utils/api'
 
 const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=900&h=700&fit=crop',
@@ -60,9 +60,32 @@ function Home() {
   const [promotions, setPromotions] = useState([])
   const [highlights, setHighlights] = useState([])
   const [cartAnimation, setCartAnimation] = useState(null)
+  const [selectedPromo, setSelectedPromo] = useState(null)
+  const [selectedDish, setSelectedDish] = useState(null)
+  const [customIngredients, setCustomIngredients] = useState('')
+  const [preferences, setPreferences] = useState({
+    spicy: false,
+    noOnions: false,
+    extraCheese: false,
+    glutenFree: false
+  })
+  const [pickupTime, setPickupTime] = useState('')
+
+  const handleCardClick = (item) => {
+    if (item.discount_percent) {
+      setSelectedPromo(item)
+    } else {
+      setSelectedDish(item)
+    }
+  }
 
   const handleAddToCart = (item, quantity, event) => {
-    addToCart(item, quantity)
+    const customizations = {
+      customIngredients,
+      preferences,
+      pickupTime
+    }
+    addToCart(item, quantity, customizations)
     
     // Create animation element
     const rect = event.target.getBoundingClientRect()
@@ -75,23 +98,47 @@ function Home() {
     
     setCartAnimation(animationElement)
     
+    // Reset form
+    setCustomIngredients('')
+    setPreferences({
+      spicy: false,
+      noOnions: false,
+      extraCheese: false,
+      glutenFree: false
+    })
+    setPickupTime('')
+    
+    // Close modal
+    setSelectedPromo(null)
+    setSelectedDish(null)
+    
     // Remove animation after it completes
     setTimeout(() => {
       setCartAnimation(null)
     }, 800)
   }
 
+  const handlePreferenceChange = (preference) => {
+    setPreferences(prev => ({
+      ...prev,
+      [preference]: !prev[preference]
+    }))
+  }
   useEffect(() => {
     apiFetch('menu')
       .then((response) => response.json())
       .then((data) => {
         const categoryData = Array.isArray(data) ? data : data.categories || []
         const dishes = categoryData.flatMap((category) =>
-          (category.items || []).map((item, index) => ({
-            ...item,
-            category: category.name,
-            image: item.image || FALLBACK_IMAGES[index % FALLBACK_IMAGES.length]
-          }))
+          (category.items || []).map((item, index) => {
+            const imageSources = item.image_filename ? getImageSources(item.image_filename) : { primary: null, fallback: null }
+            const image = imageSources.primary || FALLBACK_IMAGES[index % FALLBACK_IMAGES.length]
+            return {
+              ...item,
+              category: category.name,
+              image
+            }
+          })
         )
 
         setMenuItems(dishes)
@@ -163,8 +210,13 @@ function Home() {
             const discount = promo.discount_percent ? `${promo.discount_percent}% OFF` : 'Featured'
             const price = formatMWK(promo.price_cents || Math.round((promo.price || 0) * 100))
             return (
-              <article key={promo.id} className="promo-card">
-                <div className="promo-image" style={{ backgroundImage: `url(${promo.image || FALLBACK_IMAGES[0]})` }} />
+              <article 
+                key={promo.id} 
+                className="promo-card"
+                onClick={() => handleCardClick(promo)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="promo-image" style={{ backgroundImage: `url('${promo.image || FALLBACK_IMAGES[0]}')` }} />
                 <div className="promo-copy">
                   <span className="promo-badge">{discount}</span>
                   <h3>{promo.name || promo.title}</h3>
@@ -172,7 +224,7 @@ function Home() {
                   <div className="promo-footer">
                     <span className="promo-price">{price}</span>
                     <div className="promo-actions">
-                      <button type="button" className="promo-action" onClick={(e) => handleAddToCart(promo, 1, e)}>Order now</button>
+                      <button type="button" className="promo-action" onClick={(e) => { e.stopPropagation(); handleCardClick(promo) }}>Order now</button>
                       <Link to={`/item/${promo.id}`} className="btn btn-tertiary">Preference</Link>
                     </div>
                   </div>
@@ -193,8 +245,13 @@ function Home() {
         </div>
         <div className="menu-grid">
           {highlights.map((dish) => (
-            <article key={dish.id} className="menu-card">
-              <div className="menu-image" style={{ backgroundImage: `url(${dish.image || FALLBACK_IMAGES[0]})` }} />
+            <article 
+              key={dish.id} 
+              className="menu-card"
+              onClick={() => handleCardClick(dish)}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="menu-image" style={{ backgroundImage: `url('${dish.image || FALLBACK_IMAGES[0]}')` }} />
               <div className="menu-copy">
                 <h3>{dish.name}</h3>
                 <p>{dish.description || 'A delightful choice from our kitchen.'}</p>
@@ -203,7 +260,7 @@ function Home() {
                   <strong>{formatMWK(dish.price_cents || Math.round((dish.price || 0) * 100))}</strong>
                 </div>
                 <div className="menu-actions">
-                  <button type="button" className="btn btn-primary" onClick={(e) => handleAddToCart(dish, 1, e)}>Order now</button>
+                  <button type="button" className="btn btn-primary" onClick={(e) => { e.stopPropagation(); handleCardClick(dish) }}>Order now</button>
                   <Link to={`/item/${dish.id}`} className="btn btn-tertiary">Preference</Link>
                 </div>
               </div>

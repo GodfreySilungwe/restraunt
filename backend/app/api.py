@@ -267,7 +267,7 @@ def admin_create_category():
     return jsonify({'id': cat['id'], 'name': cat['name'], 'position': cat['position']}), 201
 
 
-@api_bp.route('/admin/categories/<int:cat_id>', methods=['PUT', 'PATCH'])
+@api_bp.route('/admin/categories/<cat_id>', methods=['PUT', 'PATCH'])
 def admin_update_category(cat_id):
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
@@ -281,7 +281,7 @@ def admin_update_category(cat_id):
     return jsonify({'ok': True})
 
 
-@api_bp.route('/admin/categories/<int:cat_id>', methods=['DELETE'])
+@api_bp.route('/admin/categories/<cat_id>', methods=['DELETE'])
 def admin_delete_category(cat_id):
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
@@ -336,7 +336,7 @@ def admin_create_menu_item():
     return jsonify({'id': mi['id'], 'image_filename': mi['image_filename']}), 201
 
 
-@api_bp.route('/admin/menu_items/<int:item_id>', methods=['PUT', 'PATCH'])
+@api_bp.route('/admin/menu_items/<item_id>', methods=['PUT', 'PATCH'])
 def admin_update_menu_item(item_id):
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
@@ -376,7 +376,7 @@ def admin_update_menu_item(item_id):
     return jsonify({'ok': True})
 
 
-@api_bp.route('/admin/menu_items/<int:item_id>', methods=['DELETE'])
+@api_bp.route('/admin/menu_items/<item_id>', methods=['DELETE'])
 def admin_delete_menu_item(item_id):
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
@@ -471,7 +471,7 @@ def admin_list_reservations():
     return jsonify(out)
 
 
-@api_bp.route('/admin/reservations/<int:res_id>', methods=['DELETE'])
+@api_bp.route('/admin/reservations/<res_id>', methods=['DELETE'])
 def admin_delete_reservation(res_id):
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
@@ -521,7 +521,7 @@ def admin_create_promotion():
     return jsonify({'id': promo['id'], 'menu_item_id': promo['menu_item_id'], 'percent': promo['percent'], 'active': promo['active']}), 201
 
 
-@api_bp.route('/admin/promotions/<int:pid>', methods=['PUT', 'PATCH'])
+@api_bp.route('/admin/promotions/<pid>', methods=['PUT', 'PATCH'])
 def admin_update_promotion(pid):
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
@@ -545,7 +545,7 @@ def admin_update_promotion(pid):
     return jsonify({'ok': True})
 
 
-@api_bp.route('/admin/promotions/<int:pid>', methods=['DELETE'])
+@api_bp.route('/admin/promotions/<pid>', methods=['DELETE'])
 def admin_delete_promotion(pid):
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
@@ -604,7 +604,7 @@ def admin_list_payments():
     return jsonify(result)
 
 
-@api_bp.route('/admin/payments/<int:payment_id>', methods=['PUT', 'PATCH'])
+@api_bp.route('/admin/payments/<payment_id>', methods=['PUT', 'PATCH'])
 def admin_update_payment(payment_id):
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
