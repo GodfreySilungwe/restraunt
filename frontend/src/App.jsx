@@ -71,18 +71,20 @@ function HeaderBar({ searchQuery, onSearchChange }) {
     }
   }, [location.pathname])
 
-  const handleLoginSubmit = (e) => {
-    e.preventDefault()
-    // Check for admin password - you can change this to match your backend
-    if (loginPassword === 'admin123') {
-      setAdminLoggedIn(true)
-      setLoginModalOpen(false)
-      navigate('/admin')
-    } else {
-      alert('Invalid password. Please try again.')
-    }
-    setLoginPassword('')
+const handleLoginSubmit = (e) => {
+  e.preventDefault()
+  // Check for admin password - match with your backend ADMIN_SECRET
+  if (loginPassword === 'dev-secret') {  // Use your actual admin secret
+    setAdminLoggedIn(true)
+    setLoginModalOpen(false)
+    // Store the admin secret so AdminDashboard can use it
+    localStorage.setItem('admin_secret', loginPassword)
+    navigate('/admin')
+  } else {
+    alert('Invalid password. Please try again.')
   }
+  setLoginPassword('')
+}
 
   const isSmallPhone = windowWidth < 768
   const isTablet = windowWidth >= 768 && windowWidth < 1280
