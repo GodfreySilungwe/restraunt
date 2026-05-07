@@ -33,6 +33,8 @@ export default function Cart() {
   const [customer, setCustomer] = useState({ customer_name: '', customer_email: '', customer_phone: '' })
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null)
   const [transactionRef, setTransactionRef] = useState('')
+  const [feedbackMessage, setFeedbackMessage] = useState('')
+  const [feedbackSent, setFeedbackSent] = useState(false)
   const [error, setError] = useState(null)
 
   const cartTotalCents = items.reduce((s, it) => s + (it.price_cents || 0) * (it.qty || 1), 0)
@@ -135,18 +137,28 @@ export default function Cart() {
         })
       })
       
-      const data = await res.json()
+      let data
+      try {
+        data = await res.json()
+      } catch (jsonErr) {
+        const text = await res.text()
+        console.error('Payment submit invalid JSON response:', text)
+        throw new Error(text || 'Invalid server response')
+      }
       
       // Check if payment was successful (status 200 or data contains success/orderId)
-      if (res.status === 200 || data.success === true || data.orderId || data.paymentId) {
+      if (res.ok && (data.success === true || data.orderId || data.paymentId)) {
         clearCart()
-        setStep('success')
+        setStep('feedback')
+        setFeedbackMessage('')
+        setFeedbackSent(false)
       } else {
-        setError(data.error || `Payment submission failed (${res.status})`)
+        const serverError = data.error || data.message || `Payment submission failed (${res.status})`
+        setError(serverError)
       }
     } catch (err) {
       console.error('Payment error:', err)
-      setError('Network error. Please check your connection and try again.')
+      setError(err.message || 'Network error. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -238,26 +250,89 @@ export default function Cart() {
     )
   }
 
-  // Success page
-  if (step === 'success') {
+  // Feedback page after payment submission
+  if (step === 'feedback') {
+    const whatsappMessage = `Hello GOSH CAFE, my order #${orderId} payment confirmation is ready.\nOrder total: ${formatMWK(totalCents)}\nTransaction reference: ${transactionRef}\nFeedback: ${feedbackMessage}`
+    const whatsappUrl = `https://wa.me/265995718815?text=${encodeURIComponent(whatsappMessage)}`
+
+    if (feedbackSent) {
+      return (
+        <div className="cart-page">
+          <div className="cart-main card-panel" style={{ maxWidth: '600px', margin: '40px auto', textAlign: 'center' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
+            <h2>Thank you for your feedback!</h2>
+            <p style={{ color: '#64748b', marginTop: '12px', marginBottom: '24px' }}>
+              We have received your feedback and the payment confirmation details. A member of our team will follow up with you shortly.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <a href={whatsappUrl} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ padding: '12px 24px' }}>
+                Send confirmation on WhatsApp
+              </a>
+              <button
+                onClick={() => window.location.href = '/'}
+                className="btn btn-primary"
+                style={{ padding: '12px 24px' }}
+              >
+                Continue Shopping
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="cart-page">
-        <div className="cart-main card-panel" style={{ maxWidth: '600px', margin: '40px auto', textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
-          <h2>Payment Submitted Successfully!</h2>
-          <p style={{ color: '#64748b', marginTop: '12px', marginBottom: '24px' }}>
-            Order #{orderId} has been created. We've received your transaction reference and will verify your payment shortly. 
-          </p>
-          <p style={{ color: '#64748b', marginBottom: '24px' }}>
-            We'll send you a confirmation email at <strong>{customer.customer_email}</strong> once your payment is processed.
-          </p>
-          <button
-            onClick={() => window.location.href = '/'}
-            className="btn btn-primary"
-            style={{ padding: '12px 24px' }}
-          >
-            Continue Shopping
-          </button>
+        <div className="cart-main card-panel" style={{ maxWidth: '700px', margin: '40px auto' }}>
+          <div className="cart-header">
+            <h2>Share Feedback</h2>
+            <p className="muted-small">Thank you for submitting payment. Please share your feedback below.</p>
+          </div>
+          <form onSubmit={(e) => {
+            e.preventDefault()
+            if (!feedbackMessage.trim()) {
+              setError('Please enter your feedback before continuing.')
+              return
+            }
+            setError(null)
+            setFeedbackSent(true)
+          }}>
+            <div className="checkout-field">
+              <label>Feedback *</label>
+              <textarea
+                value={feedbackMessage}
+                onChange={(e) => setFeedbackMessage(e.target.value)}
+                placeholder="Tell us about your experience or additional confirmation details..."
+                style={{ padding: '12px 14px', border: '1px solid #d4a373', borderRadius: '8px', width: '100%', boxSizing: 'border-box', minHeight: '140px' }}
+              />
+            </div>
+            <div className="checkout-field" style={{ background: '#f8fafc', borderRadius: '14px', padding: '14px', marginBottom: '16px' }}>
+              <p style={{ margin: 0, fontWeight: 700 }}>Confirmation details</p>
+              <p style={{ margin: '8px 0 0', color: '#475569' }}>
+                Order #{orderId} • {formatMWK(totalCents)}
+              </p>
+              <p style={{ margin: '8px 0 0', color: '#475569' }}>
+                Transaction ref: {transactionRef}
+              </p>
+              <p style={{ margin: '8px 0 0', color: '#475569' }}>
+                WhatsApp will forward these details automatically.
+              </p>
+            </div>
+            {error && (
+              <div className="msg error" style={{ padding: '12px', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '16px' }}>
+                ⚠️ {error}
+              </div>
+            )}
+            <div style={{ display: 'grid', gap: '12px' }}>
+              <button type="submit" className="btn btn-primary">Send Feedback</button>
+              <a href={whatsappUrl} target="_blank" rel="noreferrer" className="btn btn-secondary">
+                Open WhatsApp with confirmation
+              </a>
+              <button type="button" className="btn btn-tertiary" onClick={() => window.location.href = '/'}>
+                Continue Shopping
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     )

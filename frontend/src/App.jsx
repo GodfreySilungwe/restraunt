@@ -17,6 +17,12 @@ function HeaderBar({ searchQuery, onSearchChange }) {
   const { items } = useCart()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const [loginModalOpen, setLoginModalOpen] = useState(false)
+  const [loginPassword, setLoginPassword] = useState('')
+  const [adminLoggedIn, setAdminLoggedIn] = useState(false)
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
+  
   const total = items.reduce((s, i) => s + (i.qty || 0), 0)
   const badgeStyle = {
     display: 'inline-block',
@@ -31,61 +37,279 @@ function HeaderBar({ searchQuery, onSearchChange }) {
     textFillColor: 'white'
   }
 
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   const handleSearchChange = (e) => {
     onSearchChange(e.target.value)
-    // navigate to menu when user starts searching
     if (e.target.value && window.location.pathname !== '/menu' && window.location.pathname !== '/') {
       navigate('/menu')
     }
   }
 
+  const handleLoginSubmit = (e) => {
+    e.preventDefault()
+    // Check for admin password - you can change this to match your backend
+    if (loginPassword === 'admin123') {
+      setAdminLoggedIn(true)
+      setLoginModalOpen(false)
+      navigate('/admin')
+    } else {
+      alert('Invalid password. Please try again.')
+    }
+    setLoginPassword('')
+  }
+
+  const isSmallPhone = windowWidth < 480
+  const isPhone = windowWidth < 768
+  const isTablet = windowWidth >= 768 && windowWidth < 1024
+  const isDesktop = windowWidth >= 1024
+
+  // Render appropriate header based on screen size
+  if (isSmallPhone) {
+    // Small phone layout: Home icon | Cart center | More group icon
+    return (
+      <>
+        <header className="app-header app-header-mobile">
+          <div className="header-left">
+            <NavLink to="/" className="nav-icon-btn" title="Home">
+              <span className="icon">🏠</span>
+              <span className="label">Home</span>
+            </NavLink>
+          </div>
+
+          <div className="header-center">
+            <NavLink to="/cart" className="nav-icon-btn" title="Cart">
+              <span className="icon">🛒</span>
+              <span className="label">Cart</span>
+              {total > 0 && <span style={badgeStyle}>{total}</span>}
+            </NavLink>
+          </div>
+
+          <div className="header-right">
+            <div className="more-menu-container">
+              <button
+                type="button"
+                className="more-menu-btn"
+                onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+                title="Menu"
+              >
+                ☰
+              </button>
+              {moreMenuOpen && (
+                <nav className="more-menu-dropdown">
+                  <NavLink 
+                    to="/menu" 
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
+                  >
+                    Menu
+                  </NavLink>
+                  <NavLink 
+                    to="/reserve" 
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
+                  >
+                    Reservation
+                  </NavLink>
+                  <NavLink 
+                    to="/gallery" 
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
+                  >
+                    Gallery
+                  </NavLink>
+                  <NavLink 
+                    to="/about" 
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
+                  >
+                    About
+                  </NavLink>
+                  <button
+                    type="button"
+                    className="more-menu-link login-link"
+                    onClick={() => {
+                      setLoginModalOpen(true)
+                      setMoreMenuOpen(false)
+                    }}
+                  >
+                    {adminLoggedIn ? 'Admin' : 'Login'}
+                  </button>
+                </nav>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {loginModalOpen && (
+          <div className="login-modal-overlay" onClick={() => setLoginModalOpen(false)}>
+            <div className="login-modal" onClick={(e) => e.stopPropagation()}>
+              <h2>Admin Login</h2>
+              <form onSubmit={handleLoginSubmit}>
+                <input
+                  type="password"
+                  placeholder="Enter admin password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  autoFocus
+                />
+                <button type="submit" className="btn btn-primary">Login</button>
+                <button
+                  type="button"
+                  onClick={() => setLoginModalOpen(false)}
+                  className="btn btn-tertiary"
+                >
+                  Cancel
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+      </>
+    )
+  }
+
+  if (isTablet) {
+    // Tablet layout: Home | Brand | Cart | Search | Menu toggle | More items
+    return (
+      <>
+        <header className="app-header app-header-tablet">
+          <div className="header-left">
+            <NavLink to="/" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+              🏠 Home
+            </NavLink>
+          </div>
+
+          <div className="header-center">
+            <div className="header-brand">GOSH CAFE</div>
+          </div>
+
+          <div className="header-right">
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="search-input-tablet"
+            />
+            <NavLink to="/cart" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+              🛒 Cart {total > 0 && <span style={badgeStyle}>{total}</span>}
+            </NavLink>
+            <NavLink to="/menu" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Menu</NavLink>
+            <button
+              type="button"
+              className="login-btn"
+              onClick={() => setLoginModalOpen(true)}
+            >
+              {adminLoggedIn ? '👤 Admin' : '🔐 Login'}
+            </button>
+          </div>
+        </header>
+
+        {loginModalOpen && (
+          <div className="login-modal-overlay" onClick={() => setLoginModalOpen(false)}>
+            <div className="login-modal" onClick={(e) => e.stopPropagation()}>
+              <h2>Admin Login</h2>
+              <form onSubmit={handleLoginSubmit}>
+                <input
+                  type="password"
+                  placeholder="Enter admin password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  autoFocus
+                />
+                <button type="submit" className="btn btn-primary">Login</button>
+                <button
+                  type="button"
+                  onClick={() => setLoginModalOpen(false)}
+                  className="btn btn-tertiary"
+                >
+                  Cancel
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+      </>
+    )
+  }
+
+  // Desktop layout: Full responsive with autoscaling
   return (
-    <header className="app-header">
-      <div className="header-left">
-        <button
-          type="button"
-          className="nav-toggle"
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          ☰
-        </button>
-        <nav className={`nav-links${menuOpen ? ' open' : ''}`}>
-          <NavLink onClick={() => setMenuOpen(false)} to="/" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Home</NavLink>
-          <NavLink onClick={() => setMenuOpen(false)} to="/menu" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Menu</NavLink>
-          <NavLink onClick={() => setMenuOpen(false)} to="/cart" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-            Cart{total > 0 && <span style={badgeStyle}>{total}</span>}
-          </NavLink>
-          <NavLink onClick={() => setMenuOpen(false)} to="/reserve" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Reservation</NavLink>
-          <NavLink onClick={() => setMenuOpen(false)} to="/gallery" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Gallery</NavLink>
-          <NavLink onClick={() => setMenuOpen(false)} to="/about" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>About Us</NavLink>
-        </nav>
-      </div>
+    <>
+      <header className="app-header app-header-desktop">
+        <div className="header-left">
+          <button
+            type="button"
+            className="nav-toggle"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            ☰
+          </button>
+          <nav className={`nav-links${menuOpen ? ' open' : ''}`}>
+            <NavLink onClick={() => setMenuOpen(false)} to="/" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Home</NavLink>
+            <NavLink onClick={() => setMenuOpen(false)} to="/menu" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Menu</NavLink>
+            <NavLink onClick={() => setMenuOpen(false)} to="/cart" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+              Cart{total > 0 && <span style={badgeStyle}>{total}</span>}
+            </NavLink>
+            <NavLink onClick={() => setMenuOpen(false)} to="/reserve" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Reservation</NavLink>
+            <NavLink onClick={() => setMenuOpen(false)} to="/gallery" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Gallery</NavLink>
+            <NavLink onClick={() => setMenuOpen(false)} to="/about" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>About Us</NavLink>
+          </nav>
+        </div>
 
-      <div className="header-center">
-        <div className="header-brand">GOSH CAFE</div>
-      </div>
+        <div className="header-center">
+          <div className="header-brand">GOSH CAFE</div>
+        </div>
 
-      <div className="header-right">
-        <input
-          type="text"
-          placeholder="Search items..."
-          value={searchQuery}
-          onChange={handleSearchChange}
-          style={{
-            padding: '10px 14px',
-            fontSize: 14,
-            border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: 999,
-            width: 260,
-            maxWidth: '100%',
-            background: 'rgba(255,255,255,0.14)',
-            color: 'white'
-          }}
-        />
-        <NavLink to="/admin" className={({ isActive }) => `nav-link admin-link${isActive ? ' active' : ''}`}>Admin</NavLink>
-      </div>
-    </header>
+        <div className="header-right">
+          <input
+            type="text"
+            placeholder="Search items..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="search-input"
+          />
+          <button
+            type="button"
+            className="login-btn"
+            onClick={() => setLoginModalOpen(true)}
+          >
+            {adminLoggedIn ? '👤 Admin' : '🔐 Login'}
+          </button>
+        </div>
+      </header>
+
+      {loginModalOpen && (
+        <div className="login-modal-overlay" onClick={() => setLoginModalOpen(false)}>
+          <div className="login-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Admin Login</h2>
+            <form onSubmit={handleLoginSubmit}>
+              <input
+                type="password"
+                placeholder="Enter admin password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                autoFocus
+              />
+              <button type="submit" className="btn btn-primary">Login</button>
+              <button
+                type="button"
+                onClick={() => setLoginModalOpen(false)}
+                className="btn btn-tertiary"
+              >
+                Cancel
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

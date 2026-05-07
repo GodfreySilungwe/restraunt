@@ -79,6 +79,8 @@ function Home() {
     }
   }
 
+  const selectedItem = selectedPromo || selectedDish
+
   const handleAddToCart = (item, quantity, event) => {
     const customizations = {
       customIngredients,
@@ -212,9 +214,8 @@ function Home() {
             return (
               <article 
                 key={promo.id} 
-                className="promo-card"
+                className="promo-card promo-clickable"
                 onClick={() => handleCardClick(promo)}
-                style={{ cursor: 'pointer' }}
               >
                 <div className="promo-image" style={{ backgroundImage: `url('${promo.image || FALLBACK_IMAGES[0]}')` }} />
                 <div className="promo-copy">
@@ -225,7 +226,7 @@ function Home() {
                     <span className="promo-price">{price}</span>
                     <div className="promo-actions">
                       <button type="button" className="promo-action" onClick={(e) => { e.stopPropagation(); handleCardClick(promo) }}>Order now</button>
-                      <Link to={`/item/${promo.id}`} className="btn btn-tertiary">Preference</Link>
+                      <button type="button" className="btn btn-tertiary" onClick={(e) => { e.stopPropagation(); handleCardClick(promo) }}>Preference</button>
                     </div>
                   </div>
                 </div>
@@ -244,28 +245,56 @@ function Home() {
           <p>Handpicked favorites from our menu. Add them to your cart with one click.</p>
         </div>
         <div className="menu-grid">
-          {highlights.map((dish) => (
-            <article 
-              key={dish.id} 
-              className="menu-card"
-              onClick={() => handleCardClick(dish)}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="menu-image" style={{ backgroundImage: `url('${dish.image || FALLBACK_IMAGES[0]}')` }} />
-              <div className="menu-copy">
-                <h3>{dish.name}</h3>
-                <p>{dish.description || 'A delightful choice from our kitchen.'}</p>
-                <div className="menu-meta">
-                  <span>{dish.category}</span>
-                  <strong>{formatMWK(dish.price_cents || Math.round((dish.price || 0) * 100))}</strong>
+          {highlights.map((dish) => {
+            const hasDiscount = dish.discount_percent && dish.discount_percent > 0
+            const discountedPrice = hasDiscount ? ((dish.price_cents * (100 - dish.discount_percent)) / 10000).toFixed(2) : null
+            return (
+              <article 
+                key={dish.id} 
+                className="menu-card"
+                onClick={() => handleCardClick(dish)}
+                style={{ cursor: 'pointer', position: 'relative' }}
+              >
+                {hasDiscount && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 12,
+                    right: 12,
+                    background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)',
+                    color: 'white',
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    boxShadow: '0 4px 12px rgba(255, 107, 107, 0.4)',
+                    zIndex: 10
+                  }}>
+                    🎉 {dish.discount_percent}% OFF
+                  </div>
+                )}
+                <div className="menu-image" style={{ backgroundImage: `url('${dish.image || FALLBACK_IMAGES[0]}')` }} />
+                <div className="menu-copy">
+                  <h3>{dish.name}</h3>
+                  <p>{dish.description || 'A delightful choice from our kitchen.'}</p>
+                  <div className="menu-meta">
+                    <span>{dish.category}</span>
+                    {hasDiscount ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <strong style={{ textDecoration: 'line-through', fontSize: '12px', color: '#999' }}>{formatMWK(dish.price_cents || Math.round((dish.price || 0) * 100))}</strong>
+                        <strong style={{ color: '#ff6b6b', fontSize: '16px' }}>MK{discountedPrice}</strong>
+                      </div>
+                    ) : (
+                      <strong>{formatMWK(dish.price_cents || Math.round((dish.price || 0) * 100))}</strong>
+                    )}
+                  </div>
+                  <div className="menu-actions">
+                    <button type="button" className="btn btn-primary" onClick={(e) => { e.stopPropagation(); handleCardClick(dish) }}>Order now</button>
+                    <button type="button" className="btn btn-tertiary" onClick={(e) => { e.stopPropagation(); handleCardClick(dish) }}>Preference</button>
+                  </div>
                 </div>
-                <div className="menu-actions">
-                  <button type="button" className="btn btn-primary" onClick={(e) => { e.stopPropagation(); handleCardClick(dish) }}>Order now</button>
-                  <Link to={`/item/${dish.id}`} className="btn btn-tertiary">Preference</Link>
-                </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            )
+          })}
         </div>
       </section>
 
@@ -335,6 +364,67 @@ function Home() {
         <div className="footer-note">© 2026 GOSH CAFE. All rights reserved.</div>
       </footer>
 
+      {selectedItem && (
+        <div className="item-modal-backdrop" onClick={() => { setSelectedPromo(null); setSelectedDish(null) }}>
+          <div className="item-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="item-modal-header">
+              <button type="button" className="btn btn-tertiary" onClick={() => { setSelectedPromo(null); setSelectedDish(null) }}>← Back</button>
+              <button type="button" className="btn btn-danger" onClick={() => { setSelectedPromo(null); setSelectedDish(null) }}>Close</button>
+            </div>
+            <div className="item-modal-body">
+              <div className="item-modal-preview" style={{ backgroundImage: `url('${selectedItem.image || FALLBACK_IMAGES[0]}')` }} />
+              <div className="item-modal-content">
+                <h2>{selectedItem.name}</h2>
+                <p>{selectedItem.description}</p>
+                <div className="item-modal-meta">
+                  {selectedItem.discount_percent ? (
+                    <div>
+                      <div style={{ color: '#999', textDecoration: 'line-through' }}>{formatMWK(selectedItem.price_cents)}</div>
+                      <div style={{ fontSize: '1.55rem', color: '#ff6b6b', fontWeight: 700 }}>
+                        {formatMWK(Math.round(selectedItem.price_cents * (100 - selectedItem.discount_percent) / 100))}
+                      </div>
+                      <div style={{ color: '#ff6b6b', fontWeight: 700 }}>{selectedItem.discount_percent}% off</div>
+                    </div>
+                  ) : (
+                    <strong>{formatMWK(selectedItem.price_cents)}</strong>
+                  )}
+                  <div>{selectedItem.category || selectedItem.category}</div>
+                </div>
+                <div className="item-modal-form">
+                  <label>Custom ingredients</label>
+                  <textarea
+                    value={customIngredients}
+                    onChange={(e) => setCustomIngredients(e.target.value)}
+                    placeholder="Add any custom ingredients or modifications..."
+                  />
+                  <div className="item-modal-preferences">
+                    {['spicy', 'noOnions', 'extraCheese', 'glutenFree'].map((key) => (
+                      <label key={key}>
+                        <input
+                          type="checkbox"
+                          checked={preferences[key]}
+                          onChange={() => setPreferences((prev) => ({ ...prev, [key]: !prev[key] }))}
+                        />
+                        {key === 'spicy' ? 'Spicy' : key === 'noOnions' ? 'No Onions' : key === 'extraCheese' ? 'Extra Cheese' : 'Gluten Free'}
+                      </label>
+                    ))}
+                  </div>
+                  <label>Pickup time</label>
+                  <input
+                    type="datetime-local"
+                    value={pickupTime}
+                    onChange={(e) => setPickupTime(e.target.value)}
+                  />
+                  <div className="item-modal-actions">
+                    <button type="button" className="btn btn-primary" onClick={(e) => handleAddToCart(selectedItem, 1, e)}>Add to cart</button>
+                    <button type="button" className="btn btn-tertiary" onClick={() => { setSelectedPromo(null); setSelectedDish(null) }}>Cancel</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {cartAnimation && (
         <div
           className="cart-animation"
