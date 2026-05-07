@@ -4,8 +4,12 @@
  * @returns {string} Formatted price with MWK symbol
  */
 export function formatMWK(priceCents) {
-  const kwacha = (priceCents / 100).toFixed(2)
-  return `MK${kwacha}`
+  const kwacha = Number(priceCents / 100).toFixed(2)
+  const formatted = Number(kwacha).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  return `MK${formatted}`
 }
 
 /**

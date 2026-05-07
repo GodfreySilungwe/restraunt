@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
+import React, { useEffect, useRef, useState } from 'react'
+import { Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import Menu from './components/Menu'
 import Home from './components/Home'
 import ItemDetail from './components/ItemDetail'
@@ -22,6 +22,8 @@ function HeaderBar({ searchQuery, onSearchChange }) {
   const [loginPassword, setLoginPassword] = useState('')
   const [adminLoggedIn, setAdminLoggedIn] = useState(false)
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
+  const location = useLocation()
+  const moreMenuRef = useRef(null)
   
   const total = items.reduce((s, i) => s + (i.qty || 0), 0)
   const badgeStyle = {
@@ -50,6 +52,25 @@ function HeaderBar({ searchQuery, onSearchChange }) {
     }
   }
 
+  useEffect(() => {
+    if (!moreMenuOpen) return undefined
+
+    const handleClickOutside = (e) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setMoreMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [moreMenuOpen])
+
+  useEffect(() => {
+    if (moreMenuOpen) {
+      setMoreMenuOpen(false)
+    }
+  }, [location.pathname])
+
   const handleLoginSubmit = (e) => {
     e.preventDefault()
     // Check for admin password - you can change this to match your backend
@@ -64,12 +85,12 @@ function HeaderBar({ searchQuery, onSearchChange }) {
   }
 
   const isSmallPhone = windowWidth < 768
-  const isTablet = windowWidth >= 768 && windowWidth < 1024
-  const isDesktop = windowWidth >= 1024
+  const isTablet = windowWidth >= 768 && windowWidth < 1280
+  const isDesktop = windowWidth >= 1280
 
   // Render appropriate header based on screen size
   if (isSmallPhone) {
-    // Small phone layout: Home | Cart | Drop down in a row
+    // Small phone layout: Home | Menu | Cart | Drop down in a row
     return (
       <>
         <header className="app-header app-header-mobile">
@@ -77,11 +98,15 @@ function HeaderBar({ searchQuery, onSearchChange }) {
             🏠
           </NavLink>
 
+          <NavLink to="/menu" className="nav-icon-btn" title="Menu">
+            🍽️
+          </NavLink>
+
           <NavLink to="/cart" className="nav-icon-btn" title="Cart">
             🛒 {total > 0 && <span style={badgeStyle}>{total}</span>}
           </NavLink>
 
-          <div className="more-menu-container">
+          <div className="more-menu-container" ref={moreMenuRef}>
             <button
               type="button"
               className="more-menu-btn"
@@ -167,63 +192,70 @@ function HeaderBar({ searchQuery, onSearchChange }) {
     // Tablet layout: Home | Menu | Cart | Drop down
     return (
       <>
-        <header className="app-header app-header-tablet">
-          <div className="header-left">
-            <NavLink to="/" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-              🏠 Home
-            </NavLink>
-          </div>
+        <header className="app-header-tablet">
+          <NavLink to="/" className="nav-icon-btn" title="Home">
+            🏠
+          </NavLink>
 
-          <div className="header-center">
-            <NavLink to="/menu" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Menu</NavLink>
-          </div>
+          <NavLink to="/menu" className="nav-icon-btn" title="Menu">
+            🍽️
+          </NavLink>
 
-          <div className="header-right">
-            <NavLink to="/cart" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-              🛒 Cart {total > 0 && <span style={badgeStyle}>{total}</span>}
-            </NavLink>
+          <NavLink to="/cart" className="nav-icon-btn" title="Cart">
+            🛒 {total > 0 && <span style={badgeStyle}>{total}</span>}
+          </NavLink>
+
+          <div className="more-menu-container" ref={moreMenuRef}>
             <button
               type="button"
-              className="login-btn"
-              onClick={() => setLoginModalOpen(true)}
+              className="more-menu-btn"
+              onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+              title="More"
             >
-              {adminLoggedIn ? '👤 Admin' : '🔐 Login'}
+              ☰
             </button>
-            <div className="more-menu-container">
-              <button
-                type="button"
-                className="more-menu-btn"
-                onClick={() => setMoreMenuOpen(!moreMenuOpen)}
-                title="More"
-              >
-                ☰
-              </button>
-              {moreMenuOpen && (
-                <nav className="more-menu-dropdown">
-                  <NavLink 
-                    to="/reserve" 
-                    onClick={() => setMoreMenuOpen(false)}
-                    className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
-                  >
-                    Reservation
-                  </NavLink>
-                  <NavLink 
-                    to="/gallery" 
-                    onClick={() => setMoreMenuOpen(false)}
-                    className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
-                  >
-                    Gallery
-                  </NavLink>
-                  <NavLink 
-                    to="/about" 
-                    onClick={() => setMoreMenuOpen(false)}
-                    className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
-                  >
-                    About
-                  </NavLink>
-                </nav>
-              )}
-            </div>
+            {moreMenuOpen && (
+              <nav className="more-menu-dropdown">
+                <NavLink 
+                  to="/menu" 
+                  onClick={() => setMoreMenuOpen(false)}
+                  className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
+                >
+                  Menu
+                </NavLink>
+                <NavLink 
+                  to="/reserve" 
+                  onClick={() => setMoreMenuOpen(false)}
+                  className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
+                >
+                  Reservation
+                </NavLink>
+                <NavLink 
+                  to="/gallery" 
+                  onClick={() => setMoreMenuOpen(false)}
+                  className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
+                >
+                  Gallery
+                </NavLink>
+                <NavLink 
+                  to="/about" 
+                  onClick={() => setMoreMenuOpen(false)}
+                  className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
+                >
+                  About
+                </NavLink>
+                <button
+                  type="button"
+                  className="more-menu-link login-link"
+                  onClick={() => {
+                    setLoginModalOpen(true)
+                    setMoreMenuOpen(false)
+                  }}
+                >
+                  {adminLoggedIn ? 'Admin' : 'Login'}
+                </button>
+              </nav>
+            )}
           </div>
         </header>
 

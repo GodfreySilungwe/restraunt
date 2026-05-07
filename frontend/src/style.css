@@ -79,19 +79,26 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
     text-decoration: none;
     color: white;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 6px 10px;
-    border-radius: 8px;
-    background: rgba(255,255,255,0.1);
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.14);
     cursor: pointer;
+    min-width: 44px;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+  
+  .nav-icon-btn:hover {
+    background: rgba(255,255,255,0.24);
+    transform: translateY(-1px);
   }
   
   .nav-icon-btn .icon {
-    font-size: 16px;
+    font-size: 22px;
   }
   
   .nav-icon-btn .label {
@@ -128,33 +135,55 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
     position: absolute;
     top: 100%;
     right: 0;
+    left: auto;
     margin-top: 8px;
     background: rgba(12, 12, 12, 0.98);
-    border-radius: 12px;
-    min-width: 170px;
-    backdrop-filter: blur(18px);
-    z-index: 100;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    min-width: 210px;
+    width: max-content;
+    max-width: 280px;
+    backdrop-filter: blur(22px);
+    z-index: 120;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.12);
+    overflow: hidden;
   }
   
-  .more-menu-link {
+  .more-menu-link,
+  .tablet-more-link {
     display: block;
-    padding: 12px 16px;
+    padding: 14px 18px;
     color: white;
     text-decoration: none;
-    font-size: 13px;
-    font-weight: 500;
-    transition: background 0.2s ease;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.2s ease, transform 0.2s ease;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
   }
   
-  .more-menu-link:hover {
-    background: rgba(212, 163, 115, 0.25);
+  .more-menu-link:last-child,
+  .tablet-more-link:last-child {
+    border-bottom: none;
+  }
+  
+  .more-menu-link:hover,
+  .tablet-more-link:hover {
+    background: rgba(255,255,255,0.14);
+    transform: translateX(2px);
+  }
+  
+  .more-menu-link.login-link,
+  .tablet-more-link.login-link {
+    border-top: 1px solid rgba(255,255,255,0.12);
+    padding-top: 16px;
+    margin-top: 4px;
+    font-weight: 700;
+    color: #22c55e;
   }
   
   .more-menu-link.login-link {
     border-top: 1px solid rgba(255,255,255,0.1);
-    color: #f3d7a5;
+    color: #22c55e;
   }
 }
 
@@ -270,12 +299,45 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
     text-decoration: none;
     font-size: 13px;
     font-weight: 500;
-    transition: background 0.2s ease;
+    transition: background 0.2s ease, transform 0.2s ease;
   }
   
   .tablet-more-link:hover {
     background: rgba(212, 163, 115, 0.25);
   }
+}
+
+.more-menu-dropdown {
+  padding: 8px 0;
+  min-width: 190px;
+}
+
+.more-menu-link {
+  display: block;
+  padding: 12px 18px;
+  color: white;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.2s ease, transform 0.2s ease;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.more-menu-link:last-child {
+  border-bottom: none;
+}
+
+.more-menu-link:hover {
+  background: rgba(255,255,255,0.12);
+  transform: translateX(2px);
+}
+
+.more-menu-link.login-link {
+  margin-top: 4px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  padding-top: 14px;
+  font-weight: 700;
+  color: #22c55e;
 }
 
 /* Ensure proper display on all devices */
@@ -1005,10 +1067,30 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   margin-top: 1.5rem;
 }
 
-.category-items.compact {
-  display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-}
+  .items {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+  }
+
+  @media (max-width: 1023px) {
+    .items {
+      grid-template-columns: repeat(3, minmax(220px, 1fr));
+    }
+  }
+
+  @media (max-width: 900px) {
+    .items {
+      grid-template-columns: repeat(2, minmax(220px, 1fr));
+    }
+  }
+
+  @media (max-width: 720px) {
+    .items {
+      grid-template-columns: 1fr;
+    }
+  }
+
 
 .category-view-all {
   margin-top: 1rem;
@@ -1537,7 +1619,6 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   .cart-wrapper { grid-template-columns: 1fr; }
   .home-features,
   .hero-stat-grid,
-  .menu-grid,
   .promo-grid,
   .events-grid,
   .cta-actions,
@@ -1546,8 +1627,16 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   .hero-visual { position: static; transform: none; margin-top: 2rem; width: 100%; }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 767px) {
   .menu-grid { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .menu-grid { grid-template-columns: repeat(3, minmax(220px, 1fr)); gap: 24px; }
+}
+
+@media (max-width: 1023px) {
+  .home-adverts { display: none; }
 }
 
 @media (max-width: 720px) {
@@ -1556,7 +1645,6 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   .hero-content h1 { font-size: 2.7rem; }
   .hero-actions { flex-direction: column; }
   .home-features { margin-top: 0; }
-  .menu-grid { grid-template-columns: 1fr; }
   .menu-card { grid-template-rows: 220px auto; }
   .event-card { grid-template-rows: auto auto; }
   .home-promotions,
@@ -1904,7 +1992,7 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   }
 
   .nav-icon-btn .icon {
-    font-size: 14px;
+    font-size: 20px;
   }
 
   .more-menu-btn {

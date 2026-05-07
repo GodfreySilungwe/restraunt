@@ -163,7 +163,7 @@ export default function ItemDetail() {
             fontSize: '16px'
           }}
         >
-          Order now {hasDiscount ? `— MK${discountedPrice}` : ''}
+          Order now {hasDiscount ? `— ${formatMWK(Math.round((item.price_cents * (100 - item.discount_percent)) / 100))}` : ''}
         </button>
       </div>
 

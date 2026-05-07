@@ -163,7 +163,7 @@ export default function ItemCard({ item }) {
               </button>
             </div>
             <p>{item.description}</p>
-            <p><strong>Price: </strong>{hasDiscount ? `MK${discountedPrice}` : formatMWK(item.price_cents)}</p>
+            <p><strong>Price: </strong>{hasDiscount ? formatMWK(Math.round((item.price_cents * (100 - item.discount_percent)) / 100)) : formatMWK(item.price_cents)}</p>
 
             <div style={{ marginBottom: '20px' }}>
               <h3>Custom Ingredients</h3>

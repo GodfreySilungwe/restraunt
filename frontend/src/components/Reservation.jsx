@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '../utils/api'
 
 export default function Reservation() {
+  const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -33,7 +35,7 @@ export default function Reservation() {
       if (!res.ok) {
         setMessage({ type: 'error', text: data.error || 'Reservation failed' })
       } else {
-        setMessage({ type: 'success', text: `Reservation confirmed — Table ${data.table_number} at ${new Date(data.time_slot).toLocaleString()}` })
+        setMessage({ type: 'success', text: `Reservation confirmed — Table ${data.table_number} at ${new Date(data.time_slot).toLocaleString()}. To confirm your reservation, please order at least one menu item.` })
         // clear form
         setName('')
         setEmail('')
@@ -98,6 +100,17 @@ export default function Reservation() {
         {message && (
           <div className={`msg ${message.type === 'error' ? 'error' : 'success'}`}>
             {message.text}
+            {message.type === 'success' && (
+              <div style={{ marginTop: '10px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => navigate('/menu')}
+                  style={{ padding: '8px 16px', background: '#c8102e', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  Go to Order Page
+                </button>
+              </div>
+            )}
           </div>
         )}
 

@@ -281,7 +281,7 @@ function Home() {
                     {hasDiscount ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <strong style={{ textDecoration: 'line-through', fontSize: '12px', color: '#999' }}>{formatMWK(dish.price_cents || Math.round((dish.price || 0) * 100))}</strong>
-                        <strong style={{ color: '#ff6b6b', fontSize: '16px' }}>MK{discountedPrice}</strong>
+                        <strong style={{ color: '#ff6b6b', fontSize: '16px' }}>{formatMWK(Math.round((dish.price_cents * (100 - dish.discount_percent)) / 100))}</strong>
                       </div>
                     ) : (
                       <strong>{formatMWK(dish.price_cents || Math.round((dish.price || 0) * 100))}</strong>

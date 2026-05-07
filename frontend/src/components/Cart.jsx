@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { formatMWK } from '../utils/currency'
 import { apiFetch } from '../utils/api'
@@ -25,6 +26,7 @@ const PAYMENT_METHODS = {
 }
 
 export default function Cart() {
+  const navigate = useNavigate()
   const { items, clearCart, updateQuantity, removeFromCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState('cart')
@@ -295,7 +297,7 @@ export default function Cart() {
                   disabled={loading || !selectedPaymentMethod}
                   style={{ flex: 1, borderRadius: '8px', cursor: 'pointer' }}
                 >
-                  {loading ? 'Submitting...' : 'Submit Payment'}
+                  {loading ? 'Submitting...' : 'Submit details'}
                 </button>
               </div>
             </form>
@@ -312,7 +314,7 @@ export default function Cart() {
         <div className="cart-wrapper">
           <main className="cart-main card-panel" style={{ maxWidth: '600px', margin: '0 auto' }}>
             <div className="cart-header">
-              <h2>Checkout</h2>
+              <h2>Order</h2>
               <p className="muted-small">Enter your details to continue</p>
             </div>
 
@@ -427,6 +429,14 @@ export default function Cart() {
           {items.length === 0 ? (
             <div className="empty-cart-card">
               <p>No items yet. Browse the menu to add premium favorites.</p>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => navigate('/menu')}
+                style={{ marginTop: '16px', borderRadius: '10px', cursor: 'pointer' }}
+              >
+                Back to shopping
+              </button>
             </div>
           ) : (
             <ul className="cart-list">
@@ -509,6 +519,14 @@ export default function Cart() {
               </button>
             )}
           </form>
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={() => navigate('/menu')}
+            style={{ marginTop: '16px', borderRadius: '8px', width: '100%', cursor: 'pointer' }}
+          >
+            Back to shopping
+          </button>
         </aside>
       </div>
     </div>
