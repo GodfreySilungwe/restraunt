@@ -283,23 +283,42 @@ export default function AdminDashboard() {
     }
   }
 
-  async function createPromo(e) {
-    e.preventDefault()
-    const form = e.target
-    const menu_item_id = parseInt(form.menu_item_id.value, 10)
-    const percent = parseInt(form.percent.value, 10)
-    const active = form.active.checked
-    if (!menu_item_id || isNaN(percent)) return setError('invalid inputs')
-    try {
-      await fetchAdmin('admin/promotions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ menu_item_id, percent, active }) })
-      const promos = await useAdminFetch('admin/promotions', adminSecret)
-      setPromotions(promos)
-      form.reset()
-      notifyPromotionsUpdated()
-    } catch (e) {
-      setError(String(e))
-    }
+async function createPromo(e) {
+  e.preventDefault()
+  const form = e.target
+  const menu_item_id = form.menu_item_id.value  // This is now a string UUID
+  const percent = parseInt(form.percent.value, 10)
+  const active = form.active.checked
+  
+  if (!menu_item_id || isNaN(percent)) {
+    setError('Please select a menu item and enter a valid discount percentage')
+    return
   }
+  
+  if (percent < 0 || percent > 100) {
+    setError('Discount percentage must be between 0 and 100')
+    return
+  }
+  
+  try {
+    await fetchAdmin('admin/promotions', { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ 
+        menu_item_id: menu_item_id,  // String UUID, not parsed to int
+        percent: percent, 
+        active: active 
+      })
+    })
+    const promos = await useAdminFetch('admin/promotions', adminSecret)
+    setPromotions(promos)
+    form.reset()
+    notifyPromotionsUpdated()
+    setError(null)
+  } catch (e) {
+    setError(String(e))
+  }
+}
 
   async function updatePaymentStatus(payment, newStatus) {
     try {
