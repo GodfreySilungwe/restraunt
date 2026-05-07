@@ -165,58 +165,67 @@ export default function AdminDashboard() {
     }
   }
 
-  async function createItem(e) {
-    e.preventDefault()
-    const form = e.target
-    const name = form.name.value
-    const price = Math.round(parseFloat(form.price.value) * 100)
-    const description = form.description.value
-    const category_id = form.category_id.value
-    
-    if (!name || isNaN(price)) {
-      setError('Please enter a valid name and price')
-      return
-    }
-    
-    if (!category_id) {
-      setError('Please select a category')
-      return
-    }
-
-    try {
-      const payload = {
-        name: name,
-        price_cents: price,
-        description: description,
-        category_id: category_id,
-        available: true
-      }
-      
-      const response = await fetch('https://8nhfw2nleg.execute-api.us-east-1.amazonaws.com/api/admin/menu_items', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Secret': adminSecret
-        },
-        body: JSON.stringify(payload)
-      })
-      
-      const data = await response.json()
-      
-      if (!response.ok) {
-        setError(data.error || `HTTP ${response.status}`)
-        return
-      }
-      
-      const items = await useAdminFetch('admin/menu_items', adminSecret)
-      setMenuItems(items)
-      setEditingItem(null)
-      form.reset()
-    } catch (e) {
-      console.error('Create item error:', e)
-      setError(String(e))
-    }
+async function createItem(e) {
+  e.preventDefault()
+  const form = e.target
+  const name = form.name.value
+  const price = Math.round(parseFloat(form.price.value) * 100)
+  const description = form.description.value
+  const category_id = form.category_id.value
+  const imageFile = form.image?.files?.[0]
+  
+  if (!name || isNaN(price)) {
+    setError('Please enter a valid name and price')
+    return
   }
+  
+  if (!category_id) {
+    setError('Please select a category')
+    return
+  }
+
+  try {
+    // Use FormData for file upload
+    const formData = new FormData()
+    formData.append('name', name)
+    formData.append('price_cents', price.toString())
+    formData.append('description', description || '')
+    formData.append('category_id', category_id)
+    formData.append('available', 'true')
+    
+    // Append image if selected
+    if (imageFile) {
+      formData.append('image', imageFile)
+    }
+    
+    const response = await fetch('https://8nhfw2nleg.execute-api.us-east-1.amazonaws.com/api/admin/menu_items', {
+      method: 'POST',
+      headers: {
+        'X-Admin-Secret': adminSecret
+        // Don't set Content-Type header - browser will set it with boundary for FormData
+      },
+      body: formData
+    })
+    
+    const data = await response.json()
+    
+    if (!response.ok) {
+      setError(data.error || `HTTP ${response.status}`)
+      return
+    }
+    
+    // Refresh the menu items list
+    const items = await useAdminFetch('admin/menu_items', adminSecret)
+    setMenuItems(items)
+    setEditingItem(null)
+    form.reset()
+    // Clear the file input
+    if (form.image) form.image.value = ''
+  } catch (e) {
+    console.error('Create item error:', e)
+    setError(String(e))
+  }
+}
 
   async function createCategory(e) {
     e.preventDefault()
