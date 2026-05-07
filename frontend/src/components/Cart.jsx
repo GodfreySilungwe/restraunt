@@ -27,7 +27,7 @@ const PAYMENT_METHODS = {
 export default function Cart() {
   const { items, clearCart, updateQuantity, removeFromCart } = useCart()
   const [loading, setLoading] = useState(false)
-  const [step, setStep] = useState('cart') // 'cart' | 'checkout' | 'payment' | 'success'
+  const [step, setStep] = useState('cart')
   const [orderId, setOrderId] = useState(null)
   const [totalCents, setTotalCents] = useState(0)
   const [customer, setCustomer] = useState({ customer_name: '', customer_email: '', customer_phone: '' })
@@ -45,8 +45,18 @@ export default function Cart() {
   async function handleCheckout(e) {
     e.preventDefault()
     setError(null)
-    if (!customer.customer_name) {
+    
+    // Validation
+    if (!customer.customer_name?.trim()) {
       setError('Please enter your name')
+      return
+    }
+    if (!customer.customer_email?.trim()) {
+      setError('Please enter your email address')
+      return
+    }
+    if (!customer.customer_phone?.trim()) {
+      setError('Please enter your phone number')
       return
     }
     if (items.length === 0) {
@@ -56,8 +66,11 @@ export default function Cart() {
 
     const payload = {
       items: items.map((it) => ({ menu_item_id: it.id, qty: it.qty, customizations: it.customizations })),
-      ...customer,
+      customer_name: customer.customer_name,
+      customer_email: customer.customer_email,
+      customer_phone: customer.customer_phone,
     }
+    
     setLoading(true)
     try {
       const res = await apiFetch('stripe-checkout', {
@@ -65,9 +78,16 @@ export default function Cart() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
+      
       const data = await res.json()
+      
       if (!res.ok) {
-        setError(data.error || 'Checkout failed')
+        setError(data.error || 'Failed to create order. Please try again.')
+        return
+      }
+
+      if (!data.orderId) {
+        setError('Invalid response from server. Please try again.')
         return
       }
 
@@ -77,7 +97,8 @@ export default function Cart() {
       setSelectedPaymentMethod(null)
       setTransactionRef('')
     } catch (err) {
-      setError(String(err))
+      console.error('Checkout error:', err)
+      setError('Network error. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -93,7 +114,12 @@ export default function Cart() {
     }
 
     if (!transactionRef.trim()) {
-      setError('Please enter your transaction reference')
+      setError('Please enter your transaction reference number')
+      return
+    }
+
+    if (!orderId) {
+      setError('Order not found. Please go back and try again.')
       return
     }
 
@@ -108,16 +134,19 @@ export default function Cart() {
           transaction_reference: transactionRef.trim()
         })
       })
+      
       const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Payment submission failed')
-        return
+      
+      // Check if payment was successful (status 200 or data contains success/orderId)
+      if (res.status === 200 || data.success === true || data.orderId || data.paymentId) {
+        clearCart()
+        setStep('success')
+      } else {
+        setError(data.error || `Payment submission failed (${res.status})`)
       }
-
-      clearCart()
-      setStep('success')
     } catch (err) {
-      setError(String(err))
+      console.error('Payment error:', err)
+      setError('Network error. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -160,33 +189,38 @@ export default function Cart() {
 
             <form onSubmit={handlePaymentSubmit}>
               <div className="checkout-field">
-                <label>Transaction Reference</label>
+                <label>Transaction Reference *</label>
                 <input
                   type="text"
                   value={transactionRef}
                   onChange={(e) => setTransactionRef(e.target.value)}
                   placeholder="Enter your transaction/reference number"
                   style={{ padding: '10px 12px', border: '1px solid #d4a373', borderRadius: '8px', width: '100%', boxSizing: 'border-box' }}
+                  required
                 />
                 <small style={{ color: '#64748b', marginTop: '4px', display: 'block' }}>
                   Enter the transaction reference from your payment confirmation
                 </small>
               </div>
 
-              {error && <div className="msg error" style={{ marginTop: '16px' }}>{error}</div>}
+              {error && (
+                <div className="msg error" style={{ marginTop: '16px', padding: '12px', background: '#fee2e2', color: '#991b1b', borderRadius: '8px' }}>
+                  ⚠️ {error}
+                </div>
+              )}
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
                 <button
                   type="button"
-                  className="btn btn-secondary"
+                  className="btn btn-danger"
                   onClick={() => {
                     setStep('checkout')
                     setError(null)
                   }}
                   disabled={loading}
-                  style={{ flex: 1 }}
+                  style={{ flex: 1, background: '#dc2626', color: 'white', border: 'none' }}
                 >
-                  Back
+                  ← Back
                 </button>
                 <button
                   type="submit"
@@ -194,7 +228,7 @@ export default function Cart() {
                   disabled={loading || !selectedPaymentMethod}
                   style={{ flex: 1 }}
                 >
-                  {loading ? 'Submitting...' : 'Submit Payment'}
+                  {loading ? 'Submitting...' : 'Submit Details'}
                 </button>
               </div>
             </form>
@@ -220,6 +254,7 @@ export default function Cart() {
           <button
             onClick={() => window.location.href = '/'}
             className="btn btn-primary"
+            style={{ padding: '12px 24px' }}
           >
             Continue Shopping
           </button>
@@ -241,7 +276,7 @@ export default function Cart() {
 
             <form onSubmit={handleCheckout}>
               <div className="checkout-field">
-                <label>Full Name</label>
+                <label>Full Name *</label>
                 <input
                   value={customer.customer_name}
                   onChange={(e) => setCustomer({ ...customer, customer_name: e.target.value })}
@@ -252,24 +287,26 @@ export default function Cart() {
               </div>
 
               <div className="checkout-field">
-                <label>Email</label>
+                <label>Email *</label>
                 <input
                   type="email"
                   value={customer.customer_email}
                   onChange={(e) => setCustomer({ ...customer, customer_email: e.target.value })}
                   placeholder="you@example.com"
                   style={{ padding: '10px 12px', border: '1px solid #d4a373', borderRadius: '8px', width: '100%', boxSizing: 'border-box' }}
+                  required
                 />
               </div>
 
               <div className="checkout-field">
-                <label>Phone</label>
+                <label>Phone *</label>
                 <input
                   type="tel"
                   value={customer.customer_phone}
                   onChange={(e) => setCustomer({ ...customer, customer_phone: e.target.value })}
                   placeholder="+265 99 123 4567"
                   style={{ padding: '10px 12px', border: '1px solid #d4a373', borderRadius: '8px', width: '100%', boxSizing: 'border-box' }}
+                  required
                 />
               </div>
 
@@ -284,23 +321,27 @@ export default function Cart() {
                     <strong>{formatMWK(savings)}</strong>
                   </div>
                 )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 700 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 700, marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(212,163,115,0.2)' }}>
                   <span>Total:</span>
                   <span>{formatMWK(cartTotalCents)}</span>
                 </div>
               </div>
 
-              {error && <div className="msg error">{error}</div>}
+              {error && (
+                <div className="msg error" style={{ padding: '12px', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '16px' }}>
+                  ⚠️ {error}
+                </div>
+              )}
 
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button
                   type="button"
-                  className="btn btn-secondary"
+                  className="btn btn-danger"
                   onClick={() => setStep('cart')}
                   disabled={loading}
-                  style={{ flex: 1 }}
+                  style={{ flex: 1, background: '#dc2626', color: 'white', border: 'none' }}
                 >
-                  Back
+                  ← Back
                 </button>
                 <button
                   type="submit"
@@ -308,7 +349,7 @@ export default function Cart() {
                   disabled={loading || items.length === 0}
                   style={{ flex: 1 }}
                 >
-                  {loading ? 'Processing...' : 'Continue to Payment'}
+                  {loading ? 'Processing...' : 'Order Now'}
                 </button>
               </div>
             </form>
@@ -328,10 +369,15 @@ export default function Cart() {
               <h2>Shopping cart</h2>
               <p className="muted-small">{items.length === 0 ? 'Your cart is empty.' : `${items.length} item${items.length === 1 ? '' : 's'} in cart`}</p>
             </div>
-            <button type="button" className="btn btn-danger btn-sm" onClick={() => {
-              if (!items.length) return
-              if (window.confirm('Clear cart?')) clearCart()
-            }}>
+            <button 
+              type="button" 
+              className="btn btn-danger btn-sm" 
+              onClick={() => {
+                if (!items.length) return
+                if (window.confirm('Clear cart?')) clearCart()
+              }}
+              style={{ background: '#dc2626', color: 'white', border: 'none' }}
+            >
               Clear cart
             </button>
           </div>
@@ -374,7 +420,14 @@ export default function Cart() {
                         <span>{it.qty}</span>
                         <button type="button" className="qty-btn" onClick={() => updateQuantity(it.id, it.qty + 1, customizations)}>+</button>
                       </div>
-                      <button type="button" className="btn btn-danger btn-sm" onClick={() => removeFromCart(it.id, customizations)}>Remove</button>
+                      <button 
+                        type="button" 
+                        className="btn btn-danger btn-sm" 
+                        onClick={() => removeFromCart(it.id, customizations)}
+                        style={{ background: '#dc2626', color: 'white', border: 'none' }}
+                      >
+                        Remove
+                      </button>
                     </div>
                   </li>
                 )
@@ -410,7 +463,7 @@ export default function Cart() {
               </button>
             ) : (
               <button type="submit" className="btn btn-primary">
-                Proceed to checkout
+                Order Now
               </button>
             )}
           </form>
