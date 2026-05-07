@@ -117,7 +117,7 @@ export default function ItemDetail() {
       </div>
 
       <div style={{ marginBottom: '20px' }}>
-        <h3>Preferences</h3>
+        <h3>Order Now</h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
           <label>
             <input type="checkbox" checked={preferences.spicy} onChange={(e) => setPreferences({ ...preferences, spicy: e.target.checked })} />
@@ -163,7 +163,7 @@ export default function ItemDetail() {
             fontSize: '16px'
           }}
         >
-          Order now {hasDiscount ? `— ${formatMWK(Math.round((item.price_cents * (100 - item.discount_percent)) / 100))}` : ''}
+          Confirm Order {hasDiscount ? `— ${formatMWK(Math.round((item.price_cents * (100 - item.discount_percent)) / 100))}` : ''}
         </button>
       </div>
 

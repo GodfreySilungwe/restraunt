@@ -189,74 +189,29 @@ function HeaderBar({ searchQuery, onSearchChange }) {
   }
 
   if (isTablet) {
-    // Tablet layout: Home | Menu | Cart | Drop down
+    // Tablet layout: Home | Menu | Cart | Reservation | Gallery (no dropdown, no search, no login)
     return (
       <>
         <header className="app-header-tablet">
-          <NavLink to="/" className="nav-icon-btn" title="Home">
+          <NavLink to="/" className="tablet-nav-btn" title="Home">
             🏠
           </NavLink>
 
-          <NavLink to="/menu" className="nav-icon-btn" title="Menu">
+          <NavLink to="/menu" className="tablet-nav-btn" title="Menu">
             🍽️
           </NavLink>
 
-          <NavLink to="/cart" className="nav-icon-btn" title="Cart">
+          <NavLink to="/cart" className="tablet-nav-btn" title="Cart">
             🛒 {total > 0 && <span style={badgeStyle}>{total}</span>}
           </NavLink>
 
-          <div className="more-menu-container" ref={moreMenuRef}>
-            <button
-              type="button"
-              className="more-menu-btn"
-              onClick={() => setMoreMenuOpen(!moreMenuOpen)}
-              title="More"
-            >
-              ☰
-            </button>
-            {moreMenuOpen && (
-              <nav className="more-menu-dropdown">
-                <NavLink 
-                  to="/menu" 
-                  onClick={() => setMoreMenuOpen(false)}
-                  className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
-                >
-                  Menu
-                </NavLink>
-                <NavLink 
-                  to="/reserve" 
-                  onClick={() => setMoreMenuOpen(false)}
-                  className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
-                >
-                  Reservation
-                </NavLink>
-                <NavLink 
-                  to="/gallery" 
-                  onClick={() => setMoreMenuOpen(false)}
-                  className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
-                >
-                  Gallery
-                </NavLink>
-                <NavLink 
-                  to="/about" 
-                  onClick={() => setMoreMenuOpen(false)}
-                  className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
-                >
-                  About
-                </NavLink>
-                <button
-                  type="button"
-                  className="more-menu-link login-link"
-                  onClick={() => {
-                    setLoginModalOpen(true)
-                    setMoreMenuOpen(false)
-                  }}
-                >
-                  {adminLoggedIn ? 'Admin' : 'Login'}
-                </button>
-              </nav>
-            )}
-          </div>
+          <NavLink to="/reserve" className="tablet-nav-btn" title="Reservation">
+            📅
+          </NavLink>
+
+          <NavLink to="/gallery" className="tablet-nav-btn" title="Gallery">
+            🖼️
+          </NavLink>
         </header>
 
         {loginModalOpen && (
@@ -301,10 +256,10 @@ function HeaderBar({ searchQuery, onSearchChange }) {
             ☰
           </button>
           <nav className={`nav-links${menuOpen ? ' open' : ''}`}>
-            <NavLink onClick={() => setMenuOpen(false)} to="/" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Home</NavLink>
+            <NavLink onClick={() => setMenuOpen(false)} to="/" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>🏠</NavLink>
             <NavLink onClick={() => setMenuOpen(false)} to="/menu" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Menu</NavLink>
             <NavLink onClick={() => setMenuOpen(false)} to="/cart" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-              Cart{total > 0 && <span style={badgeStyle}>{total}</span>}
+              🛒{total > 0 && <span style={badgeStyle}>{total}</span>}
             </NavLink>
             <NavLink onClick={() => setMenuOpen(false)} to="/reserve" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Reservation</NavLink>
             <NavLink onClick={() => setMenuOpen(false)} to="/gallery" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Gallery</NavLink>

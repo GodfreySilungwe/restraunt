@@ -14,7 +14,7 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 .app-main { max-width: var(--max-width); margin: 0 auto; padding: 0 20px; }
 
 /* Desktop Navigation */
-.app-header{ display:grid; grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr); align-items:center; gap:1rem; padding:18px 24px; background: rgba(12, 12, 12, 0.35); border-bottom: 1px solid rgba(255,255,255,0.08); position:sticky; top:0; z-index:30; backdrop-filter: blur(18px); color: white; }
+.app-header{ display:grid; grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr); align-items:center; gap:1rem; padding:18px 24px; background: linear-gradient(90deg, #c8102e 0%, #9b0f25 100%); border-bottom: 1px solid rgba(255,255,255,0.08); position:sticky; top:0; z-index:30; backdrop-filter: blur(18px); color: white; }
 .app-header .header-left{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
 .app-header .header-center{ justify-self:center; }
 .app-header .header-right{ display:flex; align-items:center; gap:12px; justify-self:end; flex-wrap:wrap; }
@@ -35,7 +35,7 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 .app-header input:focus { outline: none; box-shadow: 0 0 0 3px rgba(212,163,115,0.16); }
 .app-header .header-brand { font-weight: 900; letter-spacing: 0.28em; color: #f3d7a5; font-size: 1.2rem; text-transform: uppercase; }
 
-/* ========== MOBILE NAVIGATION (Fixed) ========== */
+/* ========== MOBILE NAVIGATION (Fixed - up to 767px) ========== */
 @media (max-width: 767px) {
   .app-header {
     display: none;
@@ -45,19 +45,17 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
     display: flex !important;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 16px;
+    padding: 12px 16px;
     background: linear-gradient(90deg, #c8102e 0%, #9b0f25 100%);
     position: sticky;
     top: 0;
     z-index: 30;
   }
   
-  /* Home button on the left */
   .app-header-mobile .home-link {
     flex-shrink: 0;
   }
   
-  /* Brand/Logo in the center */
   .app-header-mobile .header-brand {
     flex: 1;
     text-align: center;
@@ -68,27 +66,27 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
     font-weight: 900;
   }
   
-  /* Cart and More button container on the right */
   .app-header-mobile .header-right {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     flex-shrink: 0;
   }
   
   .nav-icon-btn {
     display: inline-flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 4px;
     text-decoration: none;
     color: white;
-    font-size: 14px;
+    font-size: 11px;
     font-weight: 700;
-    padding: 10px 14px;
-    border-radius: 10px;
+    padding: 8px 12px;
+    border-radius: 12px;
     background: rgba(255,255,255,0.14);
     cursor: pointer;
-    min-width: 44px;
+    min-width: 60px;
     transition: background 0.2s ease, transform 0.2s ease;
   }
   
@@ -98,7 +96,7 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   }
   
   .nav-icon-btn .icon {
-    font-size: 22px;
+    font-size: 28px;
   }
   
   .nav-icon-btn .label {
@@ -116,15 +114,21 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   
   .more-menu-btn {
     display: flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 4px;
     background: rgba(255,255,255,0.1);
     border: none;
     color: white;
-    padding: 6px 10px;
-    border-radius: 8px;
+    padding: 8px 12px;
+    border-radius: 12px;
     cursor: pointer;
-    font-size: 16px;
+    min-width: 60px;
+  }
+  
+  .more-menu-btn .icon {
+    font-size: 28px;
   }
   
   .more-menu-btn .label {
@@ -149,8 +153,7 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
     overflow: hidden;
   }
   
-  .more-menu-link,
-  .tablet-more-link {
+  .more-menu-link {
     display: block;
     padding: 14px 18px;
     color: white;
@@ -161,33 +164,25 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
     border-bottom: 1px solid rgba(255,255,255,0.08);
   }
   
-  .more-menu-link:last-child,
-  .tablet-more-link:last-child {
+  .more-menu-link:last-child {
     border-bottom: none;
   }
   
-  .more-menu-link:hover,
-  .tablet-more-link:hover {
+  .more-menu-link:hover {
     background: rgba(255,255,255,0.14);
     transform: translateX(2px);
   }
   
-  .more-menu-link.login-link,
-  .tablet-more-link.login-link {
-    border-top: 1px solid rgba(255,255,255,0.12);
+  .more-menu-link.login-link {
+    border-top: 1px solid rgba(255,255,255,0.1);
     padding-top: 16px;
     margin-top: 4px;
     font-weight: 700;
     color: #22c55e;
   }
-  
-  .more-menu-link.login-link {
-    border-top: 1px solid rgba(255,255,255,0.1);
-    color: #22c55e;
-  }
 }
 
-/* ========== TABLET NAVIGATION (Fixed) ========== */
+/* ========== TABLET NAVIGATION (768px - 1023px) - Completely Redesigned ========== */
 @media (min-width: 768px) and (max-width: 1023px) {
   .app-header {
     display: none;
@@ -199,145 +194,45 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   
   .app-header-tablet {
     display: flex !important;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-    padding: 12px 20px;
+    gap: 8px;
+    padding: 10px 12px;
     background: linear-gradient(90deg, #c8102e 0%, #9b0f25 100%);
     position: sticky;
     top: 0;
     z-index: 30;
+    flex-wrap: wrap;
   }
-  
-  /* Left section - Home and Menu buttons */
-  .app-header-tablet .header-left {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-  }
-  
-  /* Center section - Brand/Logo */
-  .app-header-tablet .header-center {
-    flex: 1;
-    text-align: center;
-  }
-  
-  .app-header-tablet .header-brand {
-    font-size: 1.1rem;
-    letter-spacing: 0.2em;
-    margin: 0;
-    color: white;
-  }
-  
-  /* Right section - Cart and More dropdown */
-  .app-header-tablet .header-right {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-  }
-  
-  /* Tablet navigation links */
-  .tablet-nav-link {
+
+  .tablet-nav-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border-radius: 8px;
+    justify-content: center;
+    gap: 4px;
     text-decoration: none;
     color: white;
     font-weight: 600;
-    font-size: 13px;
-    background: rgba(255,255,255,0.1);
-  }
-  
-  .tablet-nav-link:hover {
-    background: rgba(255,255,255,0.2);
-  }
-  
-  /* Cart button on tablet */
-  .tablet-cart-link {
-    background: rgba(212, 163, 115, 0.25);
-    border: 1px solid rgba(212, 163, 115, 0.4);
-  }
-  
-  /* Tablet more menu */
-  .tablet-more-menu {
-    position: relative;
-  }
-  
-  .tablet-more-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
+    padding: 8px 12px;
     border-radius: 8px;
-    background: rgba(255,255,255,0.1);
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 13px;
-  }
-  
-  .tablet-more-dropdown {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    margin-top: 8px;
-    background: rgba(12, 12, 12, 0.98);
-    border-radius: 12px;
-    min-width: 180px;
-    backdrop-filter: blur(18px);
-    z-index: 100;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.1);
-  }
-  
-  .tablet-more-link {
-    display: block;
-    padding: 12px 16px;
-    color: white;
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 500;
+    background: rgba(255,255,255,0.12);
+    font-size: 12px;
     transition: background 0.2s ease, transform 0.2s ease;
+    min-width: fit-content;
+    flex: 1 1 auto;
   }
+
+  .tablet-nav-btn:hover {
+    background: rgba(255,255,255,0.22);
+    transform: translateY(-1px);
+  }
+
+  .tablet-nav-btn {
+    font-size: 18px;
+  }
+
   
-  .tablet-more-link:hover {
-    background: rgba(212, 163, 115, 0.25);
-  }
-}
-
-.more-menu-dropdown {
-  padding: 8px 0;
-  min-width: 190px;
-}
-
-.more-menu-link {
-  display: block;
-  padding: 12px 18px;
-  color: white;
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 500;
-  transition: background 0.2s ease, transform 0.2s ease;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-}
-
-.more-menu-link:last-child {
-  border-bottom: none;
-}
-
-.more-menu-link:hover {
-  background: rgba(255,255,255,0.12);
-  transform: translateX(2px);
-}
-
-.more-menu-link.login-link {
-  margin-top: 4px;
-  border-top: 1px solid rgba(255,255,255,0.12);
-  padding-top: 14px;
-  font-weight: 700;
-  color: #22c55e;
+  /* Old tablet styles removed - using .tablet-nav-btn instead */
 }
 
 /* Ensure proper display on all devices */
@@ -1637,6 +1532,9 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 
 @media (max-width: 1023px) {
   .home-adverts { display: none; }
+  .app-header-tablet .search-input-tablet {
+    display: none;
+  }
 }
 
 @media (max-width: 720px) {
@@ -1967,7 +1865,7 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   }
 }
 
-/* Small Phone (< 480px) - Fixed Mobile Navigation */
+/* Small Phone (< 480px) */
 @media (max-width: 479px) {
   body {
     font-size: 14px;
@@ -1983,24 +1881,29 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   }
 
   .nav-icon-btn {
-    padding: 4px 6px;
+    padding: 6px 8px;
+    min-width: 50px;
   }
   
   .nav-icon-btn .label {
     font-size: 9px;
-    display: inline-block;
   }
 
   .nav-icon-btn .icon {
-    font-size: 20px;
+    font-size: 24px;
   }
 
   .more-menu-btn {
-    padding: 4px 8px;
+    padding: 6px 8px;
+    min-width: 50px;
   }
 
   .more-menu-btn .label {
     font-size: 9px;
+  }
+  
+  .more-menu-btn .icon {
+    font-size: 24px;
   }
 
   .more-menu-dropdown {
@@ -2014,7 +1917,7 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   }
 
   .cart-link {
-    padding: 4px 8px;
+    padding: 6px 8px;
   }
 
   /* Home page responsive */
@@ -2243,74 +2146,6 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 
   .footer-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Tablet (768px - 1023px) */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .app-header-tablet .nav-link {
-    padding: 8px 12px;
-    font-size: 13px;
-    white-space: nowrap;
-  }
-
-  .search-input-tablet {
-    width: 150px !important;
-  }
-
-  .hero-stat-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .home-adverts {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
-    margin: 2rem 1.5rem;
-  }
-
-  .promo-grid {
-    grid-template-columns: repeat(2, minmax(280px, 1fr));
-    gap: 1.25rem;
-  }
-
-  .menu-grid {
-    grid-template-columns: repeat(3, minmax(240px, 1fr));
-    gap: 1.25rem;
-  }
-
-  .events-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.25rem;
-  }
-
-  .home-promotions,
-  .home-menu-preview,
-  .home-events,
-  .home-cta,
-  .home-footer {
-    padding: 2rem 1.5rem;
-  }
-
-  .section-heading h2 {
-    font-size: 1.8rem;
-  }
-
-  .gallery-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-  }
-
-  .footer-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .cta-panel {
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-  }
-
-  .cta-actions {
-    justify-content: flex-start;
   }
 }
 
