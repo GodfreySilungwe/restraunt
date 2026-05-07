@@ -34,7 +34,6 @@ export default function Cart() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null)
   const [transactionRef, setTransactionRef] = useState('')
   const [feedbackMessage, setFeedbackMessage] = useState('')
-  const [feedbackSent, setFeedbackSent] = useState(false)
   const [error, setError] = useState(null)
 
   const cartTotalCents = items.reduce((s, it) => s + (it.price_cents || 0) * (it.qty || 1), 0)
@@ -48,7 +47,6 @@ export default function Cart() {
     e.preventDefault()
     setError(null)
     
-    // Validation
     if (!customer.customer_name?.trim()) {
       setError('Please enter your name')
       return
@@ -146,12 +144,11 @@ export default function Cart() {
         throw new Error(text || 'Invalid server response')
       }
       
-      // Check if payment was successful (status 200 or data contains success/orderId)
-      if (res.ok && (data.success === true || data.orderId || data.paymentId)) {
+      // Payment successful if status is 200 OR data contains success/orderId/paymentId
+      if (res.status === 200 || res.ok || data.success === true || data.orderId || data.paymentId) {
+        // Clear cart and move to feedback page (do NOT clear cart twice)
         clearCart()
         setStep('feedback')
-        setFeedbackMessage('')
-        setFeedbackSent(false)
       } else {
         const serverError = data.error || data.message || `Payment submission failed (${res.status})`
         setError(serverError)
@@ -162,6 +159,64 @@ export default function Cart() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Success page with WhatsApp sharing option
+  if (step === 'feedback') {
+    const whatsappMessage = `Hello GOSH CAFE,\n\n✅ Payment Confirmation\n\nOrder #${orderId}\nTotal: ${formatMWK(totalCents)}\nPayment Method: ${selectedPaymentMethod === 'bank_transfer' ? 'Bank Transfer' : selectedPaymentMethod === 'airtel_money' ? 'Airtel Money' : 'M\'pamba'}\nTransaction Reference: ${transactionRef}\n\nCustomer: ${customer.customer_name}\nPhone: ${customer.customer_phone}\nEmail: ${customer.customer_email}\n\nFeedback: ${feedbackMessage || 'No feedback provided'}\n\nThank you for choosing GOSH CAFE!`
+    const whatsappUrl = `https://wa.me/265995718815?text=${encodeURIComponent(whatsappMessage)}`
+
+    return (
+      <div className="cart-page">
+        <div className="cart-main card-panel" style={{ maxWidth: '600px', margin: '40px auto', textAlign: 'center' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
+          <h2>Payment Submitted Successfully!</h2>
+          <p style={{ color: '#64748b', marginTop: '12px', marginBottom: '8px' }}>
+            Your payment details have been recorded.
+          </p>
+          <p style={{ color: '#10b981', fontWeight: 700, marginBottom: '24px' }}>
+            Order #{orderId} • {formatMWK(totalCents)}
+          </p>
+          
+          <div style={{ textAlign: 'left', background: '#f8fafc', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
+            <p style={{ fontWeight: 700, marginBottom: '8px' }}>📋 Payment Summary</p>
+            <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Order ID:</strong> #{orderId}</p>
+            <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Total:</strong> {formatMWK(totalCents)}</p>
+            <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Payment Method:</strong> {selectedPaymentMethod === 'bank_transfer' ? '🏦 Bank Transfer' : selectedPaymentMethod === 'airtel_money' ? '📱 Airtel Money' : '💳 M\'pamba'}</p>
+            <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Transaction Ref:</strong> {transactionRef}</p>
+          </div>
+
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', textAlign: 'left', fontWeight: 700, marginBottom: '8px' }}>Share Feedback (Optional)</label>
+            <textarea
+              value={feedbackMessage}
+              onChange={(e) => setFeedbackMessage(e.target.value)}
+              placeholder="Tell us about your experience or add any additional notes..."
+              style={{ width: '100%', padding: '12px', border: '1px solid #d4a373', borderRadius: '8px', minHeight: '100px', fontFamily: 'inherit', resize: 'vertical' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <a 
+              href={whatsappUrl} 
+              target="_blank" 
+              rel="noreferrer" 
+              className="btn btn-secondary" 
+              style={{ padding: '12px 24px', textDecoration: 'none', display: 'inline-block', borderRadius: '8px', background: '#25D366', color: 'white', border: 'none', cursor: 'pointer' }}
+            >
+              💬 Share Payment via WhatsApp
+            </a>
+            <button
+              onClick={() => window.location.href = '/'}
+              className="btn btn-primary"
+              style={{ padding: '12px 24px', borderRadius: '8px', cursor: 'pointer' }}
+            >
+              🏠 Continue Shopping
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Payment method selection UI
@@ -230,7 +285,7 @@ export default function Cart() {
                     setError(null)
                   }}
                   disabled={loading}
-                  style={{ flex: 1, background: '#dc2626', color: 'white', border: 'none' }}
+                  style={{ flex: 1, background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
                 >
                   ← Back
                 </button>
@@ -238,101 +293,13 @@ export default function Cart() {
                   type="submit"
                   className="btn btn-primary"
                   disabled={loading || !selectedPaymentMethod}
-                  style={{ flex: 1 }}
+                  style={{ flex: 1, borderRadius: '8px', cursor: 'pointer' }}
                 >
-                  {loading ? 'Submitting...' : 'Submit Details'}
+                  {loading ? 'Submitting...' : 'Submit Payment'}
                 </button>
               </div>
             </form>
           </main>
-        </div>
-      </div>
-    )
-  }
-
-  // Feedback page after payment submission
-  if (step === 'feedback') {
-    const whatsappMessage = `Hello GOSH CAFE, my order #${orderId} payment confirmation is ready.\nOrder total: ${formatMWK(totalCents)}\nTransaction reference: ${transactionRef}\nFeedback: ${feedbackMessage}`
-    const whatsappUrl = `https://wa.me/265995718815?text=${encodeURIComponent(whatsappMessage)}`
-
-    if (feedbackSent) {
-      return (
-        <div className="cart-page">
-          <div className="cart-main card-panel" style={{ maxWidth: '600px', margin: '40px auto', textAlign: 'center' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
-            <h2>Thank you for your feedback!</h2>
-            <p style={{ color: '#64748b', marginTop: '12px', marginBottom: '24px' }}>
-              We have received your feedback and the payment confirmation details. A member of our team will follow up with you shortly.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <a href={whatsappUrl} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ padding: '12px 24px' }}>
-                Send confirmation on WhatsApp
-              </a>
-              <button
-                onClick={() => window.location.href = '/'}
-                className="btn btn-primary"
-                style={{ padding: '12px 24px' }}
-              >
-                Continue Shopping
-              </button>
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    return (
-      <div className="cart-page">
-        <div className="cart-main card-panel" style={{ maxWidth: '700px', margin: '40px auto' }}>
-          <div className="cart-header">
-            <h2>Share Feedback</h2>
-            <p className="muted-small">Thank you for submitting payment. Please share your feedback below.</p>
-          </div>
-          <form onSubmit={(e) => {
-            e.preventDefault()
-            if (!feedbackMessage.trim()) {
-              setError('Please enter your feedback before continuing.')
-              return
-            }
-            setError(null)
-            setFeedbackSent(true)
-          }}>
-            <div className="checkout-field">
-              <label>Feedback *</label>
-              <textarea
-                value={feedbackMessage}
-                onChange={(e) => setFeedbackMessage(e.target.value)}
-                placeholder="Tell us about your experience or additional confirmation details..."
-                style={{ padding: '12px 14px', border: '1px solid #d4a373', borderRadius: '8px', width: '100%', boxSizing: 'border-box', minHeight: '140px' }}
-              />
-            </div>
-            <div className="checkout-field" style={{ background: '#f8fafc', borderRadius: '14px', padding: '14px', marginBottom: '16px' }}>
-              <p style={{ margin: 0, fontWeight: 700 }}>Confirmation details</p>
-              <p style={{ margin: '8px 0 0', color: '#475569' }}>
-                Order #{orderId} • {formatMWK(totalCents)}
-              </p>
-              <p style={{ margin: '8px 0 0', color: '#475569' }}>
-                Transaction ref: {transactionRef}
-              </p>
-              <p style={{ margin: '8px 0 0', color: '#475569' }}>
-                WhatsApp will forward these details automatically.
-              </p>
-            </div>
-            {error && (
-              <div className="msg error" style={{ padding: '12px', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '16px' }}>
-                ⚠️ {error}
-              </div>
-            )}
-            <div style={{ display: 'grid', gap: '12px' }}>
-              <button type="submit" className="btn btn-primary">Send Feedback</button>
-              <a href={whatsappUrl} target="_blank" rel="noreferrer" className="btn btn-secondary">
-                Open WhatsApp with confirmation
-              </a>
-              <button type="button" className="btn btn-tertiary" onClick={() => window.location.href = '/'}>
-                Continue Shopping
-              </button>
-            </div>
-          </form>
         </div>
       </div>
     )
@@ -414,7 +381,7 @@ export default function Cart() {
                   className="btn btn-danger"
                   onClick={() => setStep('cart')}
                   disabled={loading}
-                  style={{ flex: 1, background: '#dc2626', color: 'white', border: 'none' }}
+                  style={{ flex: 1, background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
                 >
                   ← Back
                 </button>
@@ -422,7 +389,7 @@ export default function Cart() {
                   type="submit"
                   className="btn btn-primary"
                   disabled={loading || items.length === 0}
-                  style={{ flex: 1 }}
+                  style={{ flex: 1, borderRadius: '8px', cursor: 'pointer' }}
                 >
                   {loading ? 'Processing...' : 'Order Now'}
                 </button>
@@ -451,7 +418,7 @@ export default function Cart() {
                 if (!items.length) return
                 if (window.confirm('Clear cart?')) clearCart()
               }}
-              style={{ background: '#dc2626', color: 'white', border: 'none' }}
+              style={{ background: '#dc2626', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', padding: '8px 16px' }}
             >
               Clear cart
             </button>
@@ -499,7 +466,7 @@ export default function Cart() {
                         type="button" 
                         className="btn btn-danger btn-sm" 
                         onClick={() => removeFromCart(it.id, customizations)}
-                        style={{ background: '#dc2626', color: 'white', border: 'none' }}
+                        style={{ background: '#dc2626', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', padding: '8px 16px' }}
                       >
                         Remove
                       </button>
@@ -533,11 +500,11 @@ export default function Cart() {
 
           <form onSubmit={(e) => { e.preventDefault(); setStep('checkout') }} className="checkout-form">
             {items.length === 0 ? (
-              <button type="button" className="btn btn-primary" disabled>
+              <button type="button" className="btn btn-primary" disabled style={{ borderRadius: '8px' }}>
                 Cart is empty
               </button>
             ) : (
-              <button type="submit" className="btn btn-primary">
+              <button type="submit" className="btn btn-primary" style={{ borderRadius: '8px', cursor: 'pointer' }}>
                 Order Now
               </button>
             )}

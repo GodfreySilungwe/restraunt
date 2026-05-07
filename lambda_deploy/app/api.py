@@ -7,7 +7,7 @@ from flask import send_from_directory, abort
 from werkzeug.utils import secure_filename
 from .models import (
     Category, MenuItem, Order, OrderItem, Subscriber, Customer, Reservation, Promotion, Payment,
-    upload_to_s3, get_s3_url
+    upload_to_s3, get_s3_url, DynamoDBModel  # ← Add DynamoDBModel here
 )
 
 # Simple admin secret (dev-only). Configure ADMIN_SECRET in your environment or .env

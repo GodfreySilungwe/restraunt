@@ -63,85 +63,75 @@ function HeaderBar({ searchQuery, onSearchChange }) {
     setLoginPassword('')
   }
 
-  const isSmallPhone = windowWidth < 480
-  const isPhone = windowWidth < 768
+  const isSmallPhone = windowWidth < 768
   const isTablet = windowWidth >= 768 && windowWidth < 1024
   const isDesktop = windowWidth >= 1024
 
   // Render appropriate header based on screen size
   if (isSmallPhone) {
-    // Small phone layout: Home icon | Cart center | More group icon
+    // Small phone layout: Home | Cart | Drop down in a row
     return (
       <>
         <header className="app-header app-header-mobile">
-          <div className="header-left">
-            <NavLink to="/" className="nav-icon-btn" title="Home">
-              <span className="icon">🏠</span>
-              <span className="label">Home</span>
-            </NavLink>
-          </div>
+          <NavLink to="/" className="nav-icon-btn" title="Home">
+            🏠
+          </NavLink>
 
-          <div className="header-center">
-            <NavLink to="/cart" className="nav-icon-btn" title="Cart">
-              <span className="icon">🛒</span>
-              <span className="label">Cart</span>
-              {total > 0 && <span style={badgeStyle}>{total}</span>}
-            </NavLink>
-          </div>
+          <NavLink to="/cart" className="nav-icon-btn" title="Cart">
+            🛒 {total > 0 && <span style={badgeStyle}>{total}</span>}
+          </NavLink>
 
-          <div className="header-right">
-            <div className="more-menu-container">
-              <button
-                type="button"
-                className="more-menu-btn"
-                onClick={() => setMoreMenuOpen(!moreMenuOpen)}
-                title="Menu"
-              >
-                ☰
-              </button>
-              {moreMenuOpen && (
-                <nav className="more-menu-dropdown">
-                  <NavLink 
-                    to="/menu" 
-                    onClick={() => setMoreMenuOpen(false)}
-                    className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
-                  >
-                    Menu
-                  </NavLink>
-                  <NavLink 
-                    to="/reserve" 
-                    onClick={() => setMoreMenuOpen(false)}
-                    className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
-                  >
-                    Reservation
-                  </NavLink>
-                  <NavLink 
-                    to="/gallery" 
-                    onClick={() => setMoreMenuOpen(false)}
-                    className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
-                  >
-                    Gallery
-                  </NavLink>
-                  <NavLink 
-                    to="/about" 
-                    onClick={() => setMoreMenuOpen(false)}
-                    className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
-                  >
-                    About
-                  </NavLink>
-                  <button
-                    type="button"
-                    className="more-menu-link login-link"
-                    onClick={() => {
-                      setLoginModalOpen(true)
-                      setMoreMenuOpen(false)
-                    }}
-                  >
-                    {adminLoggedIn ? 'Admin' : 'Login'}
-                  </button>
-                </nav>
-              )}
-            </div>
+          <div className="more-menu-container">
+            <button
+              type="button"
+              className="more-menu-btn"
+              onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+              title="More"
+            >
+              ☰
+            </button>
+            {moreMenuOpen && (
+              <nav className="more-menu-dropdown">
+                <NavLink 
+                  to="/menu" 
+                  onClick={() => setMoreMenuOpen(false)}
+                  className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
+                >
+                  Menu
+                </NavLink>
+                <NavLink 
+                  to="/reserve" 
+                  onClick={() => setMoreMenuOpen(false)}
+                  className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
+                >
+                  Reservation
+                </NavLink>
+                <NavLink 
+                  to="/gallery" 
+                  onClick={() => setMoreMenuOpen(false)}
+                  className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
+                >
+                  Gallery
+                </NavLink>
+                <NavLink 
+                  to="/about" 
+                  onClick={() => setMoreMenuOpen(false)}
+                  className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
+                >
+                  About
+                </NavLink>
+                <button
+                  type="button"
+                  className="more-menu-link login-link"
+                  onClick={() => {
+                    setLoginModalOpen(true)
+                    setMoreMenuOpen(false)
+                  }}
+                >
+                  {adminLoggedIn ? 'Admin' : 'Login'}
+                </button>
+              </nav>
+            )}
           </div>
         </header>
 
@@ -174,7 +164,7 @@ function HeaderBar({ searchQuery, onSearchChange }) {
   }
 
   if (isTablet) {
-    // Tablet layout: Home | Brand | Cart | Search | Menu toggle | More items
+    // Tablet layout: Home | Menu | Cart | Drop down
     return (
       <>
         <header className="app-header app-header-tablet">
@@ -185,21 +175,13 @@ function HeaderBar({ searchQuery, onSearchChange }) {
           </div>
 
           <div className="header-center">
-            <div className="header-brand">GOSH CAFE</div>
+            <NavLink to="/menu" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Menu</NavLink>
           </div>
 
           <div className="header-right">
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="search-input-tablet"
-            />
             <NavLink to="/cart" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
               🛒 Cart {total > 0 && <span style={badgeStyle}>{total}</span>}
             </NavLink>
-            <NavLink to="/menu" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Menu</NavLink>
             <button
               type="button"
               className="login-btn"
@@ -207,6 +189,41 @@ function HeaderBar({ searchQuery, onSearchChange }) {
             >
               {adminLoggedIn ? '👤 Admin' : '🔐 Login'}
             </button>
+            <div className="more-menu-container">
+              <button
+                type="button"
+                className="more-menu-btn"
+                onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+                title="More"
+              >
+                ☰
+              </button>
+              {moreMenuOpen && (
+                <nav className="more-menu-dropdown">
+                  <NavLink 
+                    to="/reserve" 
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
+                  >
+                    Reservation
+                  </NavLink>
+                  <NavLink 
+                    to="/gallery" 
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
+                  >
+                    Gallery
+                  </NavLink>
+                  <NavLink 
+                    to="/about" 
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={({ isActive }) => `more-menu-link${isActive ? ' active' : ''}`}
+                  >
+                    About
+                  </NavLink>
+                </nav>
+              )}
+            </div>
           </div>
         </header>
 
