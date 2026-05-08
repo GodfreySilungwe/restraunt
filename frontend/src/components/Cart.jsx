@@ -229,7 +229,7 @@ export default function Cart() {
           <main className="cart-main card-panel" style={{ maxWidth: '600px', margin: '0 auto' }}>
 <div className="cart-header">
   <h2 className="payment-title">
-    📱 Pay + Send details
+  Payment menthod used
   </h2>
 
   <div className="payment-amount-wrap">
