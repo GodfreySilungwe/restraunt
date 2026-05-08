@@ -227,10 +227,23 @@ export default function Cart() {
       <div className="cart-page">
         <div className="cart-wrapper">
           <main className="cart-main card-panel" style={{ maxWidth: '600px', margin: '0 auto' }}>
-            <div className="cart-header">
-              <h2>📱 Complete Payment</h2>
-              <p className="muted-small">Order #{orderId} • {formatMWK(totalCents)}</p>
-            </div>
+<div className="cart-header">
+  <h2 className="payment-title">
+    📱 Pay + Send details
+  </h2>
+
+  <div className="payment-amount-wrap">
+    <p className="muted-small">
+      Order #{orderId}
+    </p>
+
+    <div className="payment-arrow">↓</div>
+
+    <div className="payment-amount">
+      {formatMWK(totalCents)}
+    </div>
+  </div>
+</div>
 
             <div className="payment-methods" style={{ display: 'grid', gap: '16px', marginBottom: '24px' }}>
               {Object.entries(PAYMENT_METHODS).map(([key, method]) => (
@@ -435,7 +448,7 @@ export default function Cart() {
                 onClick={() => navigate('/menu')}
                 style={{ marginTop: '16px', borderRadius: '10px', cursor: 'pointer' }}
               >
-                Back to shopping
+                Back to menu
               </button>
             </div>
           ) : (
@@ -525,7 +538,7 @@ export default function Cart() {
             onClick={() => navigate('/menu')}
             style={{ marginTop: '16px', borderRadius: '8px', width: '100%', cursor: 'pointer' }}
           >
-            Back to shopping
+            Back to menu
           </button>
         </aside>
       </div>

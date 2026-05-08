@@ -14,7 +14,7 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 .app-main { max-width: var(--max-width); margin: 0 auto; padding: 0 20px; }
 
 /* Desktop Navigation */
-.app-header{ display:grid; grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr); align-items:center; gap:1rem; padding:18px 24px; background: linear-gradient(90deg, #c8102e 0%, #9b0f25 100%); border-bottom: 1px solid rgba(255,255,255,0.08); position:sticky; top:0; z-index:30; backdrop-filter: blur(18px); color: white; }
+.app-header{ display:grid; grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr); align-items:center; gap:1rem; padding:18px 24px; background: linear-gradient(90deg, #2c1810 0%, #3d2317 100%); border-bottom: 1px solid rgba(255,255,255,0.08); position:sticky; top:0; z-index:30; backdrop-filter: blur(18px); color: white; }
 .app-header .header-left{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
 .app-header .header-center{ justify-self:center; }
 .app-header .header-right{ display:flex; align-items:center; gap:12px; justify-self:end; flex-wrap:wrap; }
@@ -46,7 +46,7 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    background: linear-gradient(90deg, #c8102e 0%, #9b0f25 100%);
+    background: linear-gradient(90deg, #2c1810 0%, #3d2317 100%);
     position: sticky;
     top: 0;
     z-index: 30;
@@ -198,7 +198,7 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
     align-items: center;
     gap: 8px;
     padding: 10px 12px;
-    background: linear-gradient(90deg, #c8102e 0%, #9b0f25 100%);
+    background: linear-gradient(90deg, #2c1810 0%, #3d2317 100%);
     position: sticky;
     top: 0;
     z-index: 30;
@@ -800,7 +800,7 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 }
 
 .menu-grid {
-  grid-template-columns: repeat(3, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .promo-card.promo-clickable,
@@ -2225,5 +2225,245 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 
   .events-grid {
     grid-template-columns: repeat(3, minmax(380px, 1fr));
+  }
+}
+/* =========================
+   MENU LAYOUT
+========================= */
+
+.menu {
+  width: 100%;
+  padding: 2rem 1rem;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+.menu-main {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+/* =========================
+   SEARCH RESULTS
+========================= */
+
+.search-results-section {
+  width: 100%;
+  animation: fadeIn 0.3s ease;
+}
+
+.search-items {
+  margin-top: 1rem;
+}
+
+/* =========================
+   SECTION TITLES
+========================= */
+
+.section-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--text-primary, #222);
+  letter-spacing: -0.02em;
+}
+
+/* =========================
+   CATEGORY
+========================= */
+
+.category {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.category-heading {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 1rem;
+}
+
+.category-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.category-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.category-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary, #222);
+  margin: 0;
+}
+
+.category-toggle {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #666);
+  font-weight: 500;
+}
+
+/* =========================
+   ITEM GRIDS
+========================= */
+
+.items {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.category-items,
+.search-items {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* Desktop wider cards */
+@media (min-width: 1200px) {
+  .category-items,
+  .search-items {
+    grid-template-columns: repeat(4, minmax(320px, 1fr));
+  }
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .category-items,
+  .search-items {
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+  }
+}
+
+/* Mobile */
+@media (max-width: 720px) {
+  .category-items,
+  .search-items {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================
+   COLLAPSED STATES
+========================= */
+
+.category-items.collapsed {
+  overflow: hidden;
+}
+
+.category-items.compact {
+  gap: 1rem;
+}
+
+/* =========================
+   VIEW ALL BUTTON
+========================= */
+
+.category-view-all {
+  align-self: center;
+  margin-top: 0.5rem;
+}
+
+/* =========================
+   BUTTON STYLES
+========================= */
+
+.btn {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-tertiary {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary, #222);
+
+  padding: 0.75rem 1.2rem;
+  border-radius: 999px;
+
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.btn-tertiary:hover {
+  background: rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* =========================
+   ANIMATIONS
+========================= */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================
+   UTILITIES
+========================= */
+
+.hidden {
+  display: none !important;
+}
+
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+
+
+
+
+
+
+
+.menu-feature-grid {
+  display: grid;
+  gap: 1.5rem;
+
+  /* Desktop */
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+}
+
+/* Tablets */
+@media (max-width: 900px) {
+  .menu-feature-grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
+/* Phones */
+@media (max-width: 720px) {
+  .menu-feature-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -244,7 +244,7 @@ function Home() {
           </div>
           <p>Handpicked favorites from our menu. Add them to your cart with one click.</p>
         </div>
-        <div className="menu-grid">
+        <div className="menu-feature-grid">
           {highlights.map((dish) => {
             const hasDiscount = dish.discount_percent && dish.discount_percent > 0
             const discountedPrice = hasDiscount ? ((dish.price_cents * (100 - dish.discount_percent)) / 10000).toFixed(2) : null
