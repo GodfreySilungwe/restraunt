@@ -217,7 +217,7 @@ def _is_admin(req):
 def admin_list_orders():
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
-    orders = Order.get_all()
+    orders = sorted(Order.get_all(), key=lambda o: o.get('created_at') or '')
     result = []
     for o in orders:
         items = OrderItem.get_by_order(o['id'])
@@ -240,6 +240,13 @@ def admin_list_orders():
                 for it in items
             ]
         })
+
+    display_counts = {}
+    for order in result:
+        day_key = (order.get('created_at') or '')[:10]
+        display_counts[day_key] = display_counts.get(day_key, 0) + 1
+        order['display_order_id'] = f"{day_key.replace('-', '')}-{display_counts[day_key]:03d}"
+
     return jsonify(result)
 
 

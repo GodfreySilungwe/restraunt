@@ -22,6 +22,9 @@ export default function AdminDashboard() {
   const [promotions, setPromotions] = useState([])
   const [payments, setPayments] = useState([])
   const [reports, setReports] = useState(null)
+  const [orderSearch, setOrderSearch] = useState('')
+  const [hiddenOrderIds, setHiddenOrderIds] = useState([])
+  const [hiddenPaymentIds, setHiddenPaymentIds] = useState([])
   const [error, setError] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
   const [editingCategory, setEditingCategory] = useState(null)
@@ -349,9 +352,29 @@ async function createItem(e) {
   async function updatePaymentStatus(payment, newStatus) {
     try {
       await fetchAdmin(`admin/payments/${payment.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) })
+      if (newStatus === 'processed') {
+        setHiddenPaymentIds((prev) => [...prev, payment.id])
+      }
       setPayments((prev) => prev.map((p) => (p.id === payment.id ? { ...p, status: newStatus, processed_at: newStatus === 'processed' ? new Date().toISOString() : null } : p)))
     } catch (e) {
       setError(String(e))
+    }
+  }
+
+  const visibleOrders = orders.filter((order) => !hiddenOrderIds.includes(order.id)).filter((order) => {
+    const term = orderSearch.trim().toLowerCase()
+    if (!term) return true
+    return [order.display_order_id, order.id, order.customer_name, order.customer_email, order.customer_phone]
+      .filter(Boolean)
+      .some((value) => value.toLowerCase().includes(term))
+  })
+
+  const visiblePayments = payments.filter((payment) => !hiddenPaymentIds.includes(payment.id) && payment.status !== 'processed')
+
+  function hideOrder(orderId) {
+    setHiddenOrderIds((prev) => [...prev, orderId])
+    if (expandedOrderId === orderId) {
+      setExpandedOrderId(null)
     }
   }
 
@@ -636,11 +659,21 @@ async function createItem(e) {
               <div>
                 <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)' }}>
                   <h3 style={{ margin: '0 0 20px', fontSize: '1.3rem', fontWeight: 700, color: '#0f172a' }}>📦 Recent Orders</h3>
-                  {orders.length === 0 ? (
-                    <p style={{ color: '#64748b' }}>No orders yet</p>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '18px' }}>
+                    <input
+                      type="search"
+                      value={orderSearch}
+                      onChange={(e) => setOrderSearch(e.target.value)}
+                      placeholder="Search orders by ID, customer, or phone"
+                      style={{ flex: '1 1 260px', padding: '12px 14px', borderRadius: '12px', border: '1px solid rgba(148,163,184,0.3)', fontSize: '0.95rem' }}
+                    />
+                    <div style={{ color: '#64748b', fontSize: '0.95rem' }}>{visibleOrders.length} orders visible</div>
+                  </div>
+                  {visibleOrders.length === 0 ? (
+                    <p style={{ color: '#64748b' }}>No orders matched your search.</p>
                   ) : (
                     <div style={{ display: 'grid', gap: '14px' }}>
-                      {orders.map((o) => (
+                      {visibleOrders.map((o) => (
                         <div key={o.id} style={{ border: '1px solid rgba(212,163,115,0.2)', borderRadius: '16px', overflow: 'hidden', background: 'white' }}>
                           <div
                             onClick={() => toggleOrderExpanded(o.id)}
@@ -660,7 +693,7 @@ async function createItem(e) {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                               <span style={{ fontSize: '1rem', color: '#d4a373' }}>{expandedOrderId === o.id ? '▼' : '▶'}</span>
                               <div>
-                                <div style={{ fontWeight: 700, color: '#0f172a' }}>#{o.id}</div>
+                                <div style={{ fontWeight: 700, color: '#0f172a' }}>#{o.display_order_id || o.id.slice(0, 8)}</div>
                                 <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{new Date(o.created_at).toLocaleString()}</div>
                               </div>
                             </div>
@@ -689,6 +722,26 @@ async function createItem(e) {
                               }}>
                                 {o.status}
                               </span>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); hideOrder(o.id) }}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  marginTop: '10px',
+                                  padding: '6px 12px',
+                                  background: 'rgba(16, 185, 129, 0.15)',
+                                  color: '#047857',
+                                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                                  borderRadius: '999px',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                Collected
+                              </button>
                             </div>
                           </div>
 
@@ -1052,7 +1105,7 @@ async function createItem(e) {
                           </tr>
                         </thead>
                         <tbody>
-                          {payments.map((p) => (
+                          {visiblePayments.map((p) => (
                             <tr key={p.id}>
                               <td style={{ padding: '12px', fontWeight: 700, color: '#d4a373' }}>#{p.order_id}</td>
                               <td style={{ padding: '12px' }}>
