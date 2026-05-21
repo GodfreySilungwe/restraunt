@@ -31,6 +31,7 @@ export default function Cart() {
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState('cart')
   const [orderId, setOrderId] = useState(null)
+  const [orderDisplayId, setOrderDisplayId] = useState(null)
   const [totalCents, setTotalCents] = useState(0)
   const [customer, setCustomer] = useState({ customer_name: '', customer_email: '', customer_phone: '' })
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null)
@@ -88,12 +89,15 @@ export default function Cart() {
         return
       }
 
-      if (!data.orderId) {
+      const resolvedOrderId = data.orderId || data.order_id
+      const resolvedDisplayOrderId = data.display_order_id || data.display_orderId || resolvedOrderId?.slice(0, 8)
+      if (!resolvedOrderId) {
         setError('Invalid response from server. Please try again.')
         return
       }
 
-      setOrderId(data.orderId)
+      setOrderId(resolvedOrderId)
+      setOrderDisplayId(resolvedDisplayOrderId)
       setTotalCents(data.totalCents)
       setStep('payment')
       setSelectedPaymentMethod(null)
@@ -165,7 +169,8 @@ export default function Cart() {
 
   // Success page with WhatsApp sharing option
   if (step === 'feedback') {
-    const whatsappMessage = `Hello GOSH CAFE,\n\n✅ Payment Confirmation\n\nOrder #${orderId}\nTotal: ${formatMWK(totalCents)}\nPayment Method: ${selectedPaymentMethod === 'bank_transfer' ? 'Bank Transfer' : selectedPaymentMethod === 'airtel_money' ? 'Airtel Money' : 'M\'pamba'}\nTransaction Reference: ${transactionRef}\n\nCustomer: ${customer.customer_name}\nPhone: ${customer.customer_phone}\nEmail: ${customer.customer_email}\n\nFeedback: ${feedbackMessage || 'No feedback provided'}\n\nThank you for choosing GOSH CAFE!`
+    const displayedOrderId = orderDisplayId || orderId
+    const whatsappMessage = `Hello GOSH CAFE,\n\n✅ Payment Confirmation\n\nOrder #${displayedOrderId}\nTotal: ${formatMWK(totalCents)}\nPayment Method: ${selectedPaymentMethod === 'bank_transfer' ? 'Bank Transfer' : selectedPaymentMethod === 'airtel_money' ? 'Airtel Money' : 'M\'pamba'}\nTransaction Reference: ${transactionRef}\n\nCustomer: ${customer.customer_name}\nPhone: ${customer.customer_phone}\nEmail: ${customer.customer_email}\n\nFeedback: ${feedbackMessage || 'No feedback provided'}\n\nThank you for choosing GOSH CAFE!`
     const whatsappUrl = `https://wa.me/265995718815?text=${encodeURIComponent(whatsappMessage)}`
 
     return (
@@ -177,12 +182,12 @@ export default function Cart() {
             Your payment details have been recorded.
           </p>
           <p style={{ color: '#10b981', fontWeight: 700, marginBottom: '24px' }}>
-            Order #{orderId} • {formatMWK(totalCents)}
+            Order #{orderDisplayId || orderId} • {formatMWK(totalCents)}
           </p>
           
           <div style={{ textAlign: 'left', background: '#f8fafc', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
             <p style={{ fontWeight: 700, marginBottom: '8px' }}>📋 Payment Summary</p>
-            <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Order ID:</strong> #{orderId}</p>
+            <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Order ID:</strong> #{orderDisplayId || orderId}</p>
             <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Total:</strong> {formatMWK(totalCents)}</p>
             <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Payment Method:</strong> {selectedPaymentMethod === 'bank_transfer' ? '🏦 Bank Transfer' : selectedPaymentMethod === 'airtel_money' ? '📱 Airtel Money' : '💳 M\'pamba'}</p>
             <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Transaction Ref:</strong> {transactionRef}</p>
@@ -227,23 +232,32 @@ export default function Cart() {
       <div className="cart-page">
         <div className="cart-wrapper">
           <main className="cart-main card-panel" style={{ maxWidth: '600px', margin: '0 auto' }}>
-<div className="cart-header">
-  <h2 className="payment-title">
-  Payment menthod used
-  </h2>
+            <div className="cart-header" style={{ marginBottom: '24px' }}>
+              <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Confirm Payment</h2>
+              <p style={{ marginTop: '8px', color: '#64748b' }}>
+                Review your order and submit payment details to complete checkout.
+              </p>
+            </div>
 
-  <div className="payment-amount-wrap">
-    <p className="muted-small">
-      Order #{orderId}
-    </p>
+            <div style={{ marginBottom: '24px', padding: '18px', borderRadius: '16px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: '0.9rem', color: '#94a3b8' }}>Order ID</p>
+                  <p style={{ margin: '4px 0 0', fontWeight: 700, color: '#0f172a' }}>#{orderDisplayId || orderId}</p>
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: '0.9rem', color: '#94a3b8' }}>Total</p>
+                  <p style={{ margin: '4px 0 0', fontWeight: 700, color: '#0f172a' }}>{formatMWK(totalCents)}</p>
+                </div>
+              </div>
+            </div>
 
-    <div className="payment-arrow">↓</div>
-
-    <div className="payment-amount">
-      {formatMWK(totalCents)}
-    </div>
-  </div>
-</div>
+            <div style={{ marginBottom: '18px', padding: '16px', borderRadius: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <p style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>Available payment methods</p>
+              <p style={{ margin: '8px 0 0', color: '#475569', fontSize: '0.95rem' }}>
+                We accept direct bank transfer or mobile payment. Choose one method, then enter the transaction reference or the full name used for the payment.
+              </p>
+            </div>
 
             <div className="payment-methods" style={{ display: 'grid', gap: '16px', marginBottom: '24px' }}>
               {Object.entries(PAYMENT_METHODS).map(([key, method]) => (
@@ -271,17 +285,17 @@ export default function Cart() {
 
             <form onSubmit={handlePaymentSubmit}>
               <div className="checkout-field">
-                <label>Transaction Reference *</label>
+                <label>Transaction Reference or Full Name *</label>
                 <input
                   type="text"
                   value={transactionRef}
                   onChange={(e) => setTransactionRef(e.target.value)}
-                  placeholder="Enter your transaction/reference number"
+                  placeholder="Enter transaction reference or full name"
                   style={{ padding: '10px 12px', border: '1px solid #d4a373', borderRadius: '8px', width: '100%', boxSizing: 'border-box' }}
                   required
                 />
                 <small style={{ color: '#64748b', marginTop: '4px', display: 'block' }}>
-                  Enter the transaction reference from your payment confirmation
+                  Enter the transaction reference from your payment confirmation, or the full name used for the bank/mobile payment.
                 </small>
               </div>
 

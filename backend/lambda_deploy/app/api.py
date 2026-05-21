@@ -72,7 +72,16 @@ def checkout():
                              "SET total_cents = :total",
                              {':total': total})
 
-    return jsonify({'order_id': order['id'], 'status': order['status']})
+    display_order_id = _generate_display_order_id_for(order)
+    return jsonify({'order_id': order['id'], 'display_order_id': display_order_id, 'status': order['status']})
+
+
+def _generate_display_order_id_for(order):
+    day_key = str(order.get('created_at') or '')[:10]
+    if not day_key:
+        return str(order.get('id', ''))[:8]
+    same_day_orders = [o for o in Order.get_all() if str(o.get('created_at') or '')[:10] == day_key]
+    return f"{day_key.replace('-', '')}-{len(same_day_orders):03d}"
 
 
 @api_bp.route('/stripe-checkout', methods=['POST'])
@@ -123,6 +132,7 @@ def manual_checkout():
 
         return jsonify({
             'orderId': order_id,
+            'display_order_id': _generate_display_order_id_for(order),
             'totalCents': order_total_cents,
             'status': 'created'
         }), 200

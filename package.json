@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build:lambda": "py scripts/build_lambda_zip.py"
+  },
   "dependencies": {
     "react-router-dom": "^7.9.6"
   }

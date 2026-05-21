@@ -407,6 +407,7 @@ class Order:
             'customer_phone': customer_phone,
             'total_cents': total_cents,
             'status': 'pending',
+            'hidden': False,
             'created_at': datetime.utcnow()
         }
         DynamoDBModel.put_item(item)
@@ -436,6 +437,15 @@ class Order:
             "SET #status = :status",
             {':status': status},
             {'#status': 'status'}
+        )
+
+    @staticmethod
+    def set_hidden(order_id: str, hidden: bool) -> None:
+        DynamoDBModel.update_item(
+            f'ORDER#{order_id}', f'ORDER#{order_id}',
+            "SET #hidden = :hidden",
+            {':hidden': hidden},
+            {'#hidden': 'hidden'}
         )
 
 class OrderItem:
@@ -645,6 +655,7 @@ class Payment:
             'payment_method': payment_method,
             'amount_cents': amount_cents,
             'status': 'pending',
+            'hidden': False,
             'created_at': datetime.utcnow()
         }
         DynamoDBModel.put_item(item)
@@ -689,6 +700,15 @@ class Payment:
         DynamoDBModel.update_item(
             f'PAYMENT#{payment_id}', f'PAYMENT#{payment_id}',
             update_expr, attr_values, attr_names
+        )
+
+    @staticmethod
+    def set_hidden(payment_id: str, hidden: bool) -> None:
+        DynamoDBModel.update_item(
+            f'PAYMENT#{payment_id}', f'PAYMENT#{payment_id}',
+            "SET #hidden = :hidden",
+            {':hidden': hidden},
+            {'#hidden': 'hidden'}
         )
 
 class Subscriber:

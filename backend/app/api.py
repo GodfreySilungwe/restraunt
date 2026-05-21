@@ -73,7 +73,16 @@ def checkout():
                              "SET total_cents = :total",
                              {':total': total})
 
-    return jsonify({'order_id': order['id'], 'status': order['status']})
+    display_order_id = _generate_display_order_id_for(order)
+    return jsonify({'order_id': order['id'], 'display_order_id': display_order_id, 'status': order['status']})
+
+
+def _generate_display_order_id_for(order):
+    day_key = str(order.get('created_at') or '')[:10]
+    if not day_key:
+        return str(order.get('id', ''))[:8]
+    same_day_orders = [o for o in Order.get_all() if str(o.get('created_at') or '')[:10] == day_key]
+    return f"{day_key.replace('-', '')}-{len(same_day_orders):03d}"
 
 
 @api_bp.route('/stripe-checkout', methods=['POST'])
@@ -125,6 +134,7 @@ def manual_checkout():
 
         return jsonify({
             'orderId': order_id,
+            'display_order_id': _generate_display_order_id_for(order),
             'totalCents': order_total_cents,
             'status': 'created'
         }), 200
@@ -228,6 +238,7 @@ def admin_list_orders():
             'customer_phone': o['customer_phone'],
             'total_cents': o['total_cents'],
             'status': o['status'],
+            'hidden': o.get('hidden', False),
             'created_at': o['created_at'],
             'items': [
                 {
@@ -613,6 +624,7 @@ def admin_list_payments():
             'payment_method': p['payment_method'],
             'amount_cents': p['amount_cents'],
             'status': p['status'],
+            'hidden': p.get('hidden', False),
             'created_at': p['created_at'],
             'processed_at': p.get('processed_at')
         })
@@ -629,31 +641,65 @@ def admin_update_payment(payment_id):
     data = request.get_json() or {}
     new_status = (data.get('status') or '').strip()
 
-    if new_status not in ['pending', 'processed']:
+    if new_status and new_status not in ['pending', 'processed']:
         return jsonify({'error': 'Invalid status. Must be "pending" or "processed"'}), 400
 
     try:
-        # Use the model helper which handles DynamoDB conversions
-        processed_at = datetime.utcnow() if new_status == 'processed' else None
-        Payment.update_status(payment_id, new_status, processed_at)
+        processed_at = None
+        if new_status:
+            processed_at = datetime.utcnow() if new_status == 'processed' else None
+            Payment.update_status(payment_id, new_status, processed_at)
 
-        # Also update associated order when processed
-        if new_status == 'processed':
-            order = Order.get_by_id(payment['order_id'])
-            if order:
-                Order.update_status(order['id'], 'confirmed')
+            # Also update associated order when processed
+            if new_status == 'processed':
+                order = Order.get_by_id(payment['order_id'])
+                if order:
+                    Order.update_status(order['id'], 'confirmed')
+                # Hide processed payments by default
+                Payment.set_hidden(payment_id, True)
 
-        print(f"[INFO] Payment {payment_id} status updated to {new_status}")
+        # allow toggling hidden flag directly
+        if 'hidden' in data:
+            try:
+                hidden_flag = bool(data.get('hidden'))
+                Payment.set_hidden(payment_id, hidden_flag)
+            except Exception:
+                pass
+
+        updated_payment = Payment.get_by_id(payment_id)
+
+        print(f"[INFO] Payment {payment_id} updated")
 
         return jsonify({
-            'id': payment['id'],
-            'order_id': payment['order_id'],
-            'status': new_status,
-            'processed_at': processed_at.isoformat() if processed_at else None
+            'id': updated_payment['id'],
+            'order_id': updated_payment['order_id'],
+            'status': updated_payment.get('status'),
+            'processed_at': updated_payment.get('processed_at'),
+            'hidden': updated_payment.get('hidden', False)
         }), 200
     except Exception as e:
         print(f"[ERROR] Error updating payment: {str(e)}")
         return jsonify({'error': 'Failed to update payment'}), 500
+
+
+@api_bp.route('/admin/orders/<order_id>/hidden', methods=['PUT', 'PATCH'])
+def admin_set_order_hidden(order_id):
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    o = Order.get_by_id(str(order_id))
+    if not o:
+        return jsonify({'error': 'Order not found'}), 404
+    data = request.get_json() or {}
+    if 'hidden' not in data:
+        return jsonify({'error': 'hidden flag required'}), 400
+    try:
+        hidden_flag = bool(data.get('hidden'))
+        Order.set_hidden(order_id, hidden_flag)
+        updated = Order.get_by_id(order_id)
+        return jsonify({'id': updated['id'], 'hidden': updated.get('hidden', False)}), 200
+    except Exception as e:
+        print(f"[ERROR] admin_set_order_hidden: {str(e)}")
+        return jsonify({'error': 'Failed to update order hidden flag'}), 500
 
 
 # --- Admin Reports ---------------------------------------------------------
