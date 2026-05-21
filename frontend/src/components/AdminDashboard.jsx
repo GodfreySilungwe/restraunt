@@ -25,6 +25,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
   const [editingCategory, setEditingCategory] = useState(null)
+  const [expandedOrderId, setExpandedOrderId] = useState(null)
 
   // dedupe menu items for dropdowns
   const uniqueMenuItems = React.useMemo(() => {
@@ -127,6 +128,10 @@ export default function AdminDashboard() {
       window.dispatchEvent(new CustomEvent('promotions-updated'))
       localStorage.setItem('promotions_updated_at', String(Date.now()))
     } catch (e) {}
+  }
+
+  function toggleOrderExpanded(orderId) {
+    setExpandedOrderId((prev) => (prev === orderId ? null : orderId))
   }
 
   async function toggleAvailable(item) {
@@ -530,26 +535,45 @@ async function createItem(e) {
                           {reports.sales_by_day?.length === 0 ? (
                             <p style={{ color: '#64748b', margin: 0 }}>No daily sales data yet.</p>
                           ) : (
-                            <div style={{ overflowX: 'auto' }}>
-                              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                                <thead>
-                                  <tr>
-                                    <th style={{ padding: '10px', textAlign: 'left', color: '#0f172a', fontWeight: 700 }}>Date</th>
-                                    <th style={{ padding: '10px', textAlign: 'right', color: '#0f172a', fontWeight: 700 }}>Orders</th>
-                                    <th style={{ padding: '10px', textAlign: 'right', color: '#0f172a', fontWeight: 700 }}>Revenue</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {reports.sales_by_day.map((day) => (
-                                    <tr key={day.date} style={{ borderTop: '1px solid rgba(226,232,240,0.8)' }}>
-                                      <td style={{ padding: '10px', color: '#0f172a' }}>{day.date}</td>
-                                      <td style={{ padding: '10px', textAlign: 'right', color: '#334155' }}>{day.orders}</td>
-                                      <td style={{ padding: '10px', textAlign: 'right', color: '#0f172a' }}>{formatMWK(day.revenue_cents || 0)}</td>
+                            <>
+                              <div style={{ display: 'grid', gap: 14, marginBottom: 20 }}>
+                                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, overflowX: 'auto', padding: '8px 0' }}>
+                                  {(() => {
+                                    const maxRevenue = Math.max(...reports.sales_by_day.map((d) => d.revenue_cents || 0), 1)
+                                    return reports.sales_by_day.map((day) => {
+                                      const barHeight = Math.max(36, ((day.revenue_cents || 0) / maxRevenue) * 160)
+                                      return (
+                                        <div key={day.date} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 80 }}>
+                                          <div style={{ width: '100%', height: `${barHeight}px`, background: '#d4a373', borderRadius: '14px 14px 0 0', transition: 'height 0.2s ease' }} />
+                                          <div style={{ marginTop: 10, fontSize: '0.75rem', color: '#475569', textAlign: 'center' }}>{day.date}</div>
+                                          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f172a' }}>{formatMWK(day.revenue_cents || 0)}</div>
+                                        </div>
+                                      )
+                                    })
+                                  })()}
+                                </div>
+                              </div>
+                              <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                                  <thead>
+                                    <tr>
+                                      <th style={{ padding: '10px', textAlign: 'left', color: '#0f172a', fontWeight: 700 }}>Date</th>
+                                      <th style={{ padding: '10px', textAlign: 'right', color: '#0f172a', fontWeight: 700 }}>Orders</th>
+                                      <th style={{ padding: '10px', textAlign: 'right', color: '#0f172a', fontWeight: 700 }}>Revenue</th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
+                                  </thead>
+                                  <tbody>
+                                    {reports.sales_by_day.map((day) => (
+                                      <tr key={day.date} style={{ borderTop: '1px solid rgba(226,232,240,0.8)' }}>
+                                        <td style={{ padding: '10px', color: '#0f172a' }}>{day.date}</td>
+                                        <td style={{ padding: '10px', textAlign: 'right', color: '#334155' }}>{day.orders}</td>
+                                        <td style={{ padding: '10px', textAlign: 'right', color: '#0f172a' }}>{formatMWK(day.revenue_cents || 0)}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </>
                           )}
                         </div>
 
@@ -615,43 +639,93 @@ async function createItem(e) {
                   {orders.length === 0 ? (
                     <p style={{ color: '#64748b' }}>No orders yet</p>
                   ) : (
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
-                        <thead>
-                          <tr style={{ borderBottom: '2px solid rgba(212,163,115,0.1)' }}>
-                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Order ID</th>
-                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Customer</th>
-                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Phone</th>
-                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Total</th>
-                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {orders.map((o) => (
-                            <tr key={o.id} style={{ borderBottom: '1px solid rgba(212,163,115,0.05)' }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(212,163,115,0.05)'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
-                              <td style={{ padding: '12px', fontWeight: 700, color: '#d4a373' }}>#{o.id}</td>
-                              <td style={{ padding: '12px', color: '#0f172a' }}>{o.customer_name}</td>
-                              <td style={{ padding: '12px', color: '#64748b' }}>{o.customer_phone || '-'}</td>
-                              <td style={{ padding: '12px', fontWeight: 700, color: '#10b981' }}>{formatMWK(o.total_cents)}</td>
-                              <td style={{ padding: '12px' }}>
-                                <span style={{
-                                  display: 'inline-block',
-                                  padding: '4px 12px',
-                                  borderRadius: '999px',
-                                  fontSize: '0.8rem',
-                                  fontWeight: 700,
-                                  background: o.status === 'pending' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                                  color: o.status === 'pending' ? '#f59e0b' : '#10b981'
-                                }}>
-                                  {o.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div style={{ display: 'grid', gap: '14px' }}>
+                      {orders.map((o) => (
+                        <div key={o.id} style={{ border: '1px solid rgba(212,163,115,0.2)', borderRadius: '16px', overflow: 'hidden', background: 'white' }}>
+                          <div
+                            onClick={() => toggleOrderExpanded(o.id)}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'minmax(120px, 1fr) minmax(150px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr)',
+                              gap: '12px',
+                              padding: '16px',
+                              alignItems: 'center',
+                              cursor: 'pointer',
+                              background: expandedOrderId === o.id ? 'rgba(212,163,115,0.08)' : '#f8fafc',
+                              transition: 'background 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => { if (expandedOrderId !== o.id) e.currentTarget.style.background = 'rgba(212,163,115,0.12)' }}
+                            onMouseLeave={(e) => { if (expandedOrderId !== o.id) e.currentTarget.style.background = '#f8fafc' }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <span style={{ fontSize: '1rem', color: '#d4a373' }}>{expandedOrderId === o.id ? '▼' : '▶'}</span>
+                              <div>
+                                <div style={{ fontWeight: 700, color: '#0f172a' }}>#{o.id}</div>
+                                <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{new Date(o.created_at).toLocaleString()}</div>
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Customer</div>
+                              <div style={{ fontWeight: 700, color: '#0f172a' }}>{o.customer_name}</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Phone</div>
+                              <div style={{ fontWeight: 700, color: '#0f172a' }}>{o.customer_phone || '-'}</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Total</div>
+                              <div style={{ fontWeight: 700, color: '#10b981' }}>{formatMWK(o.total_cents)}</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Status</div>
+                              <span style={{
+                                display: 'inline-block',
+                                padding: '4px 12px',
+                                borderRadius: '999px',
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                                background: o.status === 'pending' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                                color: o.status === 'pending' ? '#f59e0b' : '#10b981'
+                              }}>
+                                {o.status}
+                              </span>
+                            </div>
+                          </div>
+
+                          {expandedOrderId === o.id && (
+                            <div style={{ padding: '18px 20px', background: '#fdf7ec', borderTop: '1px solid rgba(212,163,115,0.2)' }}>
+                              <div style={{ marginBottom: '14px', fontWeight: 700, color: '#0f172a' }}>🛒 Items Ordered</div>
+                              <div style={{ display: 'grid', gap: '12px' }}>
+                                {o.items.map((item, idx) => {
+                                  const prefs = item.customizations?.preferences || {}
+                                  const itemName = item.menu_item_name || menuItems.find((mi) => mi.id === item.menu_item_id)?.name || item.menu_item_id || 'Unknown item'
+                                  const prefList = Object.entries(prefs)
+                                    .filter(([, value]) => value)
+                                    .map(([key]) => {
+                                      if (key === 'spicy') return 'Spicy'
+                                      if (key === 'noOnions') return 'No Onions'
+                                      if (key === 'extraCheese') return 'Extra Cheese'
+                                      if (key === 'glutenFree') return 'Gluten Free'
+                                      return key
+                                    })
+                                  return (
+                                    <div key={idx} style={{ background: 'white', borderRadius: '14px', border: '1px solid rgba(212,163,115,0.12)', padding: '14px', display: 'grid', gap: '6px' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                                        <div style={{ fontWeight: 700, color: '#0f172a' }}>{itemName}</div>
+                                        <div style={{ fontWeight: 700, color: '#10b981' }}>{formatMWK(item.unit_price_cents || 0)} each</div>
+                                      </div>
+                                      <div style={{ color: '#475569' }}>Quantity: {item.qty}</div>
+                                      {prefList.length > 0 && <div style={{ color: '#64748b' }}>Preferences: {prefList.join(', ')}</div>}
+                                      {item.customizations?.customIngredients && <div style={{ color: '#64748b' }}>Custom: {item.customizations.customIngredients}</div>}
+                                      {item.customizations?.pickupTime && <div style={{ color: '#64748b' }}>Pickup: {new Date(item.customizations.pickupTime).toLocaleString()}</div>}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

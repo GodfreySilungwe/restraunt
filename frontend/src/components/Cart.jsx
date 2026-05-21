@@ -406,7 +406,7 @@ export default function Cart() {
                   disabled={loading || items.length === 0}
                   style={{ flex: 1, borderRadius: '8px', cursor: 'pointer' }}
                 >
-                  {loading ? 'Processing...' : 'Order Now'}
+                  {loading ? 'Processing...' : 'Proceed'}
                 </button>
               </div>
             </form>

@@ -112,9 +112,10 @@ def manual_checkout():
             menu_item = MenuItem.get_by_id(str(it.get('menu_item_id')))
             qty = int(it.get('qty', 1))
             price_cents = int(menu_item['price_cents'])
+            customizations = it.get('customizations', {})
 
             OrderItem.create(order_id=order_id, menu_item_id=str(menu_item['id']),
-                           qty=qty, unit_price_cents=price_cents)
+                           qty=qty, unit_price_cents=price_cents, customizations=customizations)
             print(f"[INFO] Added item {menu_item['name']} (qty: {qty}) to order")
 
         # Create initial payment record with pending status
@@ -229,7 +230,13 @@ def admin_list_orders():
             'status': o['status'],
             'created_at': o['created_at'],
             'items': [
-                {'menu_item_id': it['menu_item_id'], 'qty': it['qty'], 'unit_price_cents': it['unit_price_cents']}
+                {
+                    'menu_item_id': it['menu_item_id'],
+                    'menu_item_name': (MenuItem.get_by_id(it['menu_item_id']) or {}).get('name') if it.get('menu_item_id') else None,
+                    'qty': it['qty'],
+                    'unit_price_cents': it['unit_price_cents'],
+                    'customizations': it.get('customizations', {})
+                }
                 for it in items
             ]
         })

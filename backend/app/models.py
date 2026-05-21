@@ -440,7 +440,7 @@ class Order:
 
 class OrderItem:
     @staticmethod
-    def create(order_id: str, menu_item_id: str, qty: int, unit_price_cents: int) -> Dict[str, Any]:
+    def create(order_id: str, menu_item_id: str, qty: int, unit_price_cents: int, customizations: dict = None) -> Dict[str, Any]:
         import uuid
         item_id = str(uuid.uuid4())
         item = {
@@ -452,6 +452,7 @@ class OrderItem:
             'menu_item_id': menu_item_id,
             'qty': qty,
             'unit_price_cents': unit_price_cents,
+            'customizations': customizations or {},
             'created_at': datetime.utcnow()
         }
         DynamoDBModel.put_item(item)
