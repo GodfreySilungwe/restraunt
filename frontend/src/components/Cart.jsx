@@ -213,7 +213,7 @@ export default function Cart() {
               className="btn btn-primary"
               style={{ padding: '12px 24px', borderRadius: '8px', cursor: 'pointer' }}
             >
-              🏠 Continue Shopping
+              🏠 Back to Main Menu
             </button>
           </div>
         </div>

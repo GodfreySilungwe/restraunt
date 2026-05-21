@@ -460,28 +460,150 @@ async function createItem(e) {
                   {!reports ? (
                     <p style={{ color: '#64748b' }}>No report data</p>
                   ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
-                      <div style={{ padding: 16, background: '#fff7ed', borderRadius: 12 }}>
-                        <div style={{ fontSize: '0.9rem', color: '#92400e' }}>Total Orders</div>
-                        <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{reports.total_orders}</div>
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+                        <div style={{ padding: 16, background: '#fff7ed', borderRadius: 12 }}>
+                          <div style={{ fontSize: '0.9rem', color: '#92400e' }}>Total Orders</div>
+                          <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{reports.total_orders}</div>
+                        </div>
+                        <div style={{ padding: 16, background: '#eef2ff', borderRadius: 12 }}>
+                          <div style={{ fontSize: '0.9rem', color: '#3730a3' }}>Total Payments</div>
+                          <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{reports.total_payments}</div>
+                        </div>
+                        <div style={{ padding: 16, background: '#ecfdf5', borderRadius: 12 }}>
+                          <div style={{ fontSize: '0.9rem', color: '#065f46' }}>Processed Payments</div>
+                          <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{reports.processed_payments}</div>
+                        </div>
+                        <div style={{ padding: 16, background: '#fff1f2', borderRadius: 12 }}>
+                          <div style={{ fontSize: '0.9rem', color: '#831843' }}>Pending Payments</div>
+                          <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{reports.pending_payments}</div>
+                        </div>
+                        <div style={{ padding: 16, background: '#f0fdf4', borderRadius: 12 }}>
+                          <div style={{ fontSize: '0.9rem', color: '#065f46' }}>Revenue</div>
+                          <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{formatMWK(reports.revenue_cents || 0)}</div>
+                        </div>
+                        <div style={{ padding: 16, background: '#e0f2fe', borderRadius: 12 }}>
+                          <div style={{ fontSize: '0.9rem', color: '#0369a1' }}>Avg Order Value</div>
+                          <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{formatMWK(reports.average_order_value_cents || 0)}</div>
+                        </div>
+                        <div style={{ padding: 16, background: '#eef2ff', borderRadius: 12 }}>
+                          <div style={{ fontSize: '0.9rem', color: '#3730a3' }}>Best Sales Day</div>
+                          <div style={{ fontSize: '1rem', fontWeight: 700 }}>{reports.best_sales_day?.date || '-'}</div>
+                          <div style={{ fontSize: '0.95rem', color: '#475569' }}>{formatMWK(reports.best_sales_day?.revenue_cents || 0)} revenue</div>
+                        </div>
+                        <div style={{ padding: 16, background: '#f8fafc', borderRadius: 12 }}>
+                          <div style={{ fontSize: '0.9rem', color: '#0f172a' }}>Most Orders Day</div>
+                          <div style={{ fontSize: '1rem', fontWeight: 700 }}>{reports.most_orders_day?.date || '-'}</div>
+                          <div style={{ fontSize: '0.95rem', color: '#475569' }}>{reports.most_orders_day?.orders || 0} orders</div>
+                        </div>
                       </div>
-                      <div style={{ padding: 16, background: '#eef2ff', borderRadius: 12 }}>
-                        <div style={{ fontSize: '0.9rem', color: '#3730a3' }}>Total Payments</div>
-                        <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{reports.total_payments}</div>
+
+                      <div style={{ marginTop: 24, display: 'grid', gap: 20 }}>
+                        <div style={{ background: '#ffffff', borderRadius: 16, padding: 20, boxShadow: '0 4px 12px rgba(15,23,42,0.05)' }}>
+                          <h4 style={{ margin: '0 0 14px', fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>💳 Payment Methods</h4>
+                          {Object.keys(reports.payment_methods || {}).length === 0 ? (
+                            <p style={{ color: '#64748b', margin: 0 }}>No payment method data available.</p>
+                          ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ textAlign: 'left', padding: '10px', color: '#0f172a', fontWeight: 700 }}>Method</th>
+                                  <th style={{ textAlign: 'right', padding: '10px', color: '#0f172a', fontWeight: 700 }}>Count</th>
+                                  <th style={{ textAlign: 'right', padding: '10px', color: '#0f172a', fontWeight: 700 }}>Revenue</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {Object.entries(reports.payment_methods || {}).map(([method, stats]) => (
+                                  <tr key={method} style={{ borderTop: '1px solid rgba(226,232,240,0.8)' }}>
+                                    <td style={{ padding: '10px', color: '#0f172a' }}>{method}</td>
+                                    <td style={{ padding: '10px', textAlign: 'right', color: '#334155' }}>{stats.count}</td>
+                                    <td style={{ padding: '10px', textAlign: 'right', color: '#0f172a' }}>{formatMWK(stats.revenue_cents || 0)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+
+                        <div style={{ background: '#ffffff', borderRadius: 16, padding: 20, boxShadow: '0 4px 12px rgba(15,23,42,0.05)' }}>
+                          <h4 style={{ margin: '0 0 14px', fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>📈 Sales by Day</h4>
+                          {reports.sales_by_day?.length === 0 ? (
+                            <p style={{ color: '#64748b', margin: 0 }}>No daily sales data yet.</p>
+                          ) : (
+                            <div style={{ overflowX: 'auto' }}>
+                              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                                <thead>
+                                  <tr>
+                                    <th style={{ padding: '10px', textAlign: 'left', color: '#0f172a', fontWeight: 700 }}>Date</th>
+                                    <th style={{ padding: '10px', textAlign: 'right', color: '#0f172a', fontWeight: 700 }}>Orders</th>
+                                    <th style={{ padding: '10px', textAlign: 'right', color: '#0f172a', fontWeight: 700 }}>Revenue</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {reports.sales_by_day.map((day) => (
+                                    <tr key={day.date} style={{ borderTop: '1px solid rgba(226,232,240,0.8)' }}>
+                                      <td style={{ padding: '10px', color: '#0f172a' }}>{day.date}</td>
+                                      <td style={{ padding: '10px', textAlign: 'right', color: '#334155' }}>{day.orders}</td>
+                                      <td style={{ padding: '10px', textAlign: 'right', color: '#0f172a' }}>{formatMWK(day.revenue_cents || 0)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+
+                        <div style={{ background: '#ffffff', borderRadius: 16, padding: 20, boxShadow: '0 4px 12px rgba(15,23,42,0.05)' }}>
+                          <h4 style={{ margin: '0 0 14px', fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>🛍️ Top Selling Items</h4>
+                          {reports.top_selling_items?.length === 0 ? (
+                            <p style={{ color: '#64748b', margin: 0 }}>No item sales data available yet.</p>
+                          ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ padding: '10px', textAlign: 'left', color: '#0f172a', fontWeight: 700 }}>Item</th>
+                                  <th style={{ padding: '10px', textAlign: 'right', color: '#0f172a', fontWeight: 700 }}>Qty</th>
+                                  <th style={{ padding: '10px', textAlign: 'right', color: '#0f172a', fontWeight: 700 }}>Revenue</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {reports.top_selling_items.map((item) => (
+                                  <tr key={item.menu_item_id} style={{ borderTop: '1px solid rgba(226,232,240,0.8)' }}>
+                                    <td style={{ padding: '10px', color: '#0f172a' }}>{item.name}</td>
+                                    <td style={{ padding: '10px', textAlign: 'right', color: '#334155' }}>{item.quantity}</td>
+                                    <td style={{ padding: '10px', textAlign: 'right', color: '#0f172a' }}>{formatMWK(item.revenue_cents || 0)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+
+                        <div style={{ background: '#ffffff', borderRadius: 16, padding: 20, boxShadow: '0 4px 12px rgba(15,23,42,0.05)' }}>
+                          <h4 style={{ margin: '0 0 14px', fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>📦 Order Status Breakdown</h4>
+                          {Object.keys(reports.order_status_counts || {}).length === 0 ? (
+                            <p style={{ color: '#64748b', margin: 0 }}>No status breakdown available.</p>
+                          ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ padding: '10px', textAlign: 'left', color: '#0f172a', fontWeight: 700 }}>Status</th>
+                                  <th style={{ padding: '10px', textAlign: 'right', color: '#0f172a', fontWeight: 700 }}>Count</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {Object.entries(reports.order_status_counts || {}).map(([status, count]) => (
+                                  <tr key={status} style={{ borderTop: '1px solid rgba(226,232,240,0.8)' }}>
+                                    <td style={{ padding: '10px', color: '#0f172a' }}>{status}</td>
+                                    <td style={{ padding: '10px', textAlign: 'right', color: '#334155' }}>{count}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
                       </div>
-                      <div style={{ padding: 16, background: '#ecfdf5', borderRadius: 12 }}>
-                        <div style={{ fontSize: '0.9rem', color: '#065f46' }}>Processed Payments</div>
-                        <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{reports.processed_payments}</div>
-                      </div>
-                      <div style={{ padding: 16, background: '#fff1f2', borderRadius: 12 }}>
-                        <div style={{ fontSize: '0.9rem', color: '#831843' }}>Pending Payments</div>
-                        <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{reports.pending_payments}</div>
-                      </div>
-                      <div style={{ padding: 16, background: '#f0fdf4', borderRadius: 12 }}>
-                        <div style={{ fontSize: '0.9rem', color: '#065f46' }}>Revenue</div>
-                        <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{formatMWK(reports.revenue_cents || 0)}</div>
-                      </div>
-                    </div>
+                    </>
                   )}
                 </div>
               </div>

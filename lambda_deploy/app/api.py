@@ -1,6 +1,7 @@
 import os
 import random
 import time
+from collections import Counter, defaultdict
 from datetime import datetime
 from flask import Blueprint, jsonify, request, redirect
 from flask import send_from_directory, abort
@@ -647,21 +648,111 @@ def admin_reports():
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
     try:
-        orders = Order.get_all()
-        payments = Payment.get_all()
+        orders = Order.get_all() or []
+        payments = Payment.get_all() or []
 
-        total_orders = len(orders or [])
-        total_payments = len(payments or [])
-        processed_payments = sum(1 for p in (payments or []) if p.get('status') == 'processed')
-        pending_payments = sum(1 for p in (payments or []) if p.get('status') == 'pending')
-        revenue_cents = sum(int(p.get('amount_cents', 0)) for p in (payments or []) if p.get('status') == 'processed')
+        total_orders = len(orders)
+        total_payments = len(payments)
+        processed_payments = sum(1 for p in payments if p.get('status') == 'processed')
+        pending_payments = sum(1 for p in payments if p.get('status') == 'pending')
+        revenue_cents = sum(int(p.get('amount_cents', 0)) for p in payments if p.get('status') == 'processed')
+
+        def parse_date(value):
+            if not value:
+                return None
+            if isinstance(value, datetime):
+                return value.date()
+            try:
+                return datetime.fromisoformat(value).date()
+            except Exception:
+                try:
+                    return datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%f').date()
+                except Exception:
+                    return None
+
+        sales_by_day = defaultdict(lambda: {'orders': 0, 'revenue_cents': 0})
+        payment_method_counts = defaultdict(lambda: {'count': 0, 'revenue_cents': 0})
+        order_status_counts = Counter()
+        item_sales = Counter()
+        item_revenue = Counter()
+
+        order_map = {order['id']: order for order in orders if order.get('id')}
+
+        for order in orders:
+            order_status_counts[order.get('status', 'unknown')] += 1
+            order_date = parse_date(order.get('created_at'))
+            if order_date:
+                sales_by_day[str(order_date)]['orders'] += 1
+
+        for payment in payments:
+            method = payment.get('payment_method') or 'unknown'
+            processed_at = payment.get('processed_at') or payment.get('created_at')
+            payment_date = parse_date(processed_at)
+            amount = int(payment.get('amount_cents', 0))
+            if payment.get('status') == 'processed':
+                if payment_date:
+                    sales_by_day[str(payment_date)]['revenue_cents'] += amount
+                payment_method_counts[method]['count'] += 1
+                payment_method_counts[method]['revenue_cents'] += amount
+
+        average_order_value_cents = 0
+        if processed_payments > 0:
+            average_order_value_cents = revenue_cents // processed_payments
+
+        best_sales_day = None
+        most_orders_day = None
+        if sales_by_day:
+            best_sales_day_date = max(sales_by_day.items(), key=lambda kv: kv[1]['revenue_cents'])[0]
+            most_orders_day_date = max(sales_by_day.items(), key=lambda kv: kv[1]['orders'])[0]
+            best_sales_day = {
+                'date': best_sales_day_date,
+                'revenue_cents': sales_by_day[best_sales_day_date]['revenue_cents'],
+                'orders': sales_by_day[best_sales_day_date]['orders']
+            }
+            most_orders_day = {
+                'date': most_orders_day_date,
+                'orders': sales_by_day[most_orders_day_date]['orders'],
+                'revenue_cents': sales_by_day[most_orders_day_date]['revenue_cents']
+            }
+
+        for order_id, order in order_map.items():
+            items = OrderItem.get_by_order(order_id) or []
+            for item in items:
+                key = item.get('menu_item_id') or item.get('id')
+                quantity = int(item.get('quantity', 0))
+                item_sales[key] += quantity
+                item_revenue[key] += int(item.get('menu_item_price_cents', 0)) * quantity
+
+        top_selling_items = []
+        if item_sales:
+            for item_id, quantity in item_sales.most_common(5):
+                name = item_id
+                menu_item = MenuItem.get_by_id(item_id)
+                if menu_item:
+                    name = menu_item.get('name')
+                top_selling_items.append({
+                    'menu_item_id': item_id,
+                    'name': name,
+                    'quantity': quantity,
+                    'revenue_cents': item_revenue[item_id]
+                })
 
         return jsonify({
             'total_orders': total_orders,
             'total_payments': total_payments,
             'processed_payments': processed_payments,
             'pending_payments': pending_payments,
-            'revenue_cents': revenue_cents
+            'revenue_cents': revenue_cents,
+            'average_order_value_cents': average_order_value_cents,
+            'order_status_counts': dict(order_status_counts),
+            'payment_methods': {k: v for k, v in payment_method_counts.items()},
+            'sales_by_day': [
+                {'date': date, 'orders': values['orders'], 'revenue_cents': values['revenue_cents']}
+                for date, values in sorted(sales_by_day.items())
+            ],
+            'best_sales_day': best_sales_day,
+            'most_orders_day': most_orders_day,
+            'top_selling_items': top_selling_items
         }), 200
     except Exception as e:
         print(f"[ERROR] admin_reports: {str(e)}")

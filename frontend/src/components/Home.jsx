@@ -416,7 +416,7 @@ function Home() {
                     onChange={(e) => setPickupTime(e.target.value)}
                   />
                   <div className="item-modal-actions">
-                    <button type="button" className="btn btn-primary" onClick={(e) => handleAddToCart(selectedItem, 1, e)}>Add to cart</button>
+                    <button type="button" className="btn btn-primary" onClick={(e) => handleAddToCart(selectedItem, 1, e)}>Order now</button>
                     <button type="button" className="btn btn-tertiary" onClick={() => { setSelectedPromo(null); setSelectedDish(null) }}>Cancel</button>
                   </div>
                 </div>
