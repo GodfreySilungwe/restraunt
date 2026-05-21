@@ -1,11 +1,6 @@
-﻿import sys
-import os
-from serverless_wsgi import handle_request
+# AWS Lambda handler entry point
+# Lambda function name should be: handler.lambda_handler
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from app import create_app
+from app import lambda_handler
 
-app = create_app()
-
-def lambda_handler(event, context):
-    return handle_request(app, event, context)
+__all__ = ['lambda_handler']

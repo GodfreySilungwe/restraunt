@@ -418,7 +418,8 @@ class Order:
         DynamoDBModel.update_item(
             f'ORDER#{order_id}', f'ORDER#{order_id}',
             "SET #status = :status",
-            {':status': status, '#status': 'status'}
+            {':status': status},
+            {'#status': 'status'}
         )
 
 class OrderItem:

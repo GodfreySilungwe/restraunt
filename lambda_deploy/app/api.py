@@ -611,41 +611,61 @@ def admin_update_payment(payment_id):
     payment = Payment.get_by_id(str(payment_id))
     if not payment:
         return jsonify({'error': 'Payment not found'}), 404
-    
     data = request.get_json() or {}
-    new_status = data.get('status', '').strip()
-    
+    new_status = (data.get('status') or '').strip()
+
     if new_status not in ['pending', 'processed']:
         return jsonify({'error': 'Invalid status. Must be "pending" or "processed"'}), 400
-    
+
     try:
-        update_expr = "SET #status = :status"
-        attr_values = {':status': new_status}
-        attr_names = {'#status': 'status'}
-        
+        # Use the model helper which handles DynamoDB conversions
+        processed_at = datetime.utcnow() if new_status == 'processed' else None
+        Payment.update_status(payment_id, new_status, processed_at)
+
+        # Also update associated order when processed
         if new_status == 'processed':
-            update_expr += ", processed_at = :processed_at"
-            attr_values[':processed_at'] = datetime.utcnow()
-            
-            # Also update the associated order status to confirmed
             order = Order.get_by_id(payment['order_id'])
             if order:
                 Order.update_status(order['id'], 'confirmed')
-        
-        DynamoDBModel.update_item(f"PAYMENT#{payment_id}", f"PAYMENT#{payment_id}",
-                                 update_expr, attr_values, attr_names)
-        
+
         print(f"[INFO] Payment {payment_id} status updated to {new_status}")
-        
+
         return jsonify({
             'id': payment['id'],
             'order_id': payment['order_id'],
             'status': new_status,
-            'processed_at': datetime.utcnow().isoformat() if new_status == 'processed' else None
+            'processed_at': processed_at.isoformat() if processed_at else None
         }), 200
     except Exception as e:
         print(f"[ERROR] Error updating payment: {str(e)}")
         return jsonify({'error': 'Failed to update payment'}), 500
+
+
+# --- Admin Reports ---------------------------------------------------------
+@api_bp.route('/admin/reports', methods=['GET'])
+def admin_reports():
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    try:
+        orders = Order.get_all()
+        payments = Payment.get_all()
+
+        total_orders = len(orders or [])
+        total_payments = len(payments or [])
+        processed_payments = sum(1 for p in (payments or []) if p.get('status') == 'processed')
+        pending_payments = sum(1 for p in (payments or []) if p.get('status') == 'pending')
+        revenue_cents = sum(int(p.get('amount_cents', 0)) for p in (payments or []) if p.get('status') == 'processed')
+
+        return jsonify({
+            'total_orders': total_orders,
+            'total_payments': total_payments,
+            'processed_payments': processed_payments,
+            'pending_payments': pending_payments,
+            'revenue_cents': revenue_cents
+        }), 200
+    except Exception as e:
+        print(f"[ERROR] admin_reports: {str(e)}")
+        return jsonify({'error': 'Failed to compute reports'}), 500
 
 
 # --- Airtel Money integration ------------------------------------------------

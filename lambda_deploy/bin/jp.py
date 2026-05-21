@@ -1,4 +1,4 @@
-#!C:\Users\PIU\Desktop\Personal Folder 23Oct2023\Quantic Work\Interactive webApp Assignment\.venv\Scripts\python.exe
+#!C:\Users\PIU\AppData\Local\Microsoft\WindowsApps\PythonSoftwareFoundation.Python.3.10_qbz5n2kfra8p0\python.exe
 
 import sys
 import json

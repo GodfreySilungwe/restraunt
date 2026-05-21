@@ -21,6 +21,7 @@ export default function AdminDashboard() {
   const [reservations, setReservations] = useState([])
   const [promotions, setPromotions] = useState([])
   const [payments, setPayments] = useState([])
+  const [reports, setReports] = useState(null)
   const [error, setError] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
   const [editingCategory, setEditingCategory] = useState(null)
@@ -82,6 +83,10 @@ export default function AdminDashboard() {
     } else if (tab === 'payments') {
       useAdminFetch('admin/payments', adminSecret)
         .then(setPayments)
+        .catch((e) => setError(e.message))
+    } else if (tab === 'reports') {
+      useAdminFetch('admin/reports', adminSecret)
+        .then(setReports)
         .catch((e) => setError(e.message))
     }
   }, [tab, adminSecret])
@@ -448,6 +453,39 @@ async function createItem(e) {
             )}
 
             {/* Orders Tab */}
+            {tab === 'reports' && (
+              <div>
+                <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)' }}>
+                  <h3 style={{ margin: '0 0 20px', fontSize: '1.3rem', fontWeight: 700, color: '#0f172a' }}>📊 Reports</h3>
+                  {!reports ? (
+                    <p style={{ color: '#64748b' }}>No report data</p>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+                      <div style={{ padding: 16, background: '#fff7ed', borderRadius: 12 }}>
+                        <div style={{ fontSize: '0.9rem', color: '#92400e' }}>Total Orders</div>
+                        <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{reports.total_orders}</div>
+                      </div>
+                      <div style={{ padding: 16, background: '#eef2ff', borderRadius: 12 }}>
+                        <div style={{ fontSize: '0.9rem', color: '#3730a3' }}>Total Payments</div>
+                        <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{reports.total_payments}</div>
+                      </div>
+                      <div style={{ padding: 16, background: '#ecfdf5', borderRadius: 12 }}>
+                        <div style={{ fontSize: '0.9rem', color: '#065f46' }}>Processed Payments</div>
+                        <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{reports.processed_payments}</div>
+                      </div>
+                      <div style={{ padding: 16, background: '#fff1f2', borderRadius: 12 }}>
+                        <div style={{ fontSize: '0.9rem', color: '#831843' }}>Pending Payments</div>
+                        <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{reports.pending_payments}</div>
+                      </div>
+                      <div style={{ padding: 16, background: '#f0fdf4', borderRadius: 12 }}>
+                        <div style={{ fontSize: '0.9rem', color: '#065f46' }}>Revenue</div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{formatMWK(reports.revenue_cents || 0)}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             {tab === 'orders' && (
               <div>
                 <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)' }}>
