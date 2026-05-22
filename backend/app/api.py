@@ -258,6 +258,22 @@ def admin_list_orders():
         display_counts[day_key] = display_counts.get(day_key, 0) + 1
         order['display_order_id'] = f"{day_key.replace('-', '')}-{display_counts[day_key]:03d}"
 
+    # support server-side searching via ?q=term (matches common fields)
+    q = (request.args.get('q') or '').strip().lower()
+    if q:
+        def _matches(o):
+            for field in ('id', 'display_order_id', 'customer_name', 'customer_email', 'customer_phone', 'created_at'):
+                v = o.get(field)
+                if not v:
+                    continue
+                try:
+                    if q in str(v).lower():
+                        return True
+                except Exception:
+                    continue
+            return False
+        result = [o for o in result if _matches(o)]
+
     return jsonify(result)
 
 
@@ -628,6 +644,22 @@ def admin_list_payments():
             'created_at': p['created_at'],
             'processed_at': p.get('processed_at')
         })
+    # support server-side search via ?q=term
+    q = (request.args.get('q') or '').strip().lower()
+    if q:
+        def _matches(p):
+            for field in ('id', 'order_id', 'transaction_reference', 'customer_name', 'customer_phone', 'created_at'):
+                v = p.get(field)
+                if not v:
+                    continue
+                try:
+                    if q in str(v).lower():
+                        return True
+                except Exception:
+                    continue
+            return False
+        result = [p for p in result if _matches(p)]
+
     return jsonify(result)
 
 
@@ -700,6 +732,33 @@ def admin_set_order_hidden(order_id):
     except Exception as e:
         print(f"[ERROR] admin_set_order_hidden: {str(e)}")
         return jsonify({'error': 'Failed to update order hidden flag'}), 500
+
+
+@api_bp.route('/admin/orders/<order_id>/collect', methods=['PUT'])
+def admin_collect_order(order_id):
+    """Mark a confirmed order as collected (only allowed for confirmed orders).
+    This will set the order as hidden and update status to 'collected'.
+    """
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    o = Order.get_by_id(str(order_id))
+    if not o:
+        return jsonify({'error': 'Order not found'}), 404
+    # Only allow collect when order has been confirmed
+    if o.get('status') != 'confirmed':
+        return jsonify({'error': 'Only confirmed orders can be collected'}), 400
+    try:
+        Order.set_hidden(order_id, True)
+        try:
+            Order.update_status(order_id, 'collected')
+        except Exception:
+            # it's OK if update_status is not available; continue
+            pass
+        updated = Order.get_by_id(order_id)
+        return jsonify({'id': updated['id'], 'status': updated.get('status'), 'hidden': updated.get('hidden', False)}), 200
+    except Exception as e:
+        print(f"[ERROR] admin_collect_order: {str(e)}")
+        return jsonify({'error': 'Failed to collect order'}), 500
 
 
 # --- Admin Reports ---------------------------------------------------------

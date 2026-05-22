@@ -31,7 +31,6 @@ export default function Cart() {
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState('cart')
   const [orderId, setOrderId] = useState(null)
-  const [orderDisplayId, setOrderDisplayId] = useState(null)
   const [totalCents, setTotalCents] = useState(0)
   const [customer, setCustomer] = useState({ customer_name: '', customer_email: '', customer_phone: '' })
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null)
@@ -52,10 +51,6 @@ export default function Cart() {
     
     if (!customer.customer_name?.trim()) {
       setError('Please enter your name')
-      return
-    }
-    if (!customer.customer_email?.trim()) {
-      setError('Please enter your email address')
       return
     }
     if (!customer.customer_phone?.trim()) {
@@ -90,14 +85,12 @@ export default function Cart() {
       }
 
       const resolvedOrderId = data.orderId || data.order_id
-      const resolvedDisplayOrderId = data.display_order_id || data.display_orderId || resolvedOrderId?.slice(0, 8)
       if (!resolvedOrderId) {
         setError('Invalid response from server. Please try again.')
         return
       }
 
       setOrderId(resolvedOrderId)
-      setOrderDisplayId(resolvedDisplayOrderId)
       setTotalCents(data.totalCents)
       setStep('payment')
       setSelectedPaymentMethod(null)
@@ -169,7 +162,7 @@ export default function Cart() {
 
   // Success page with WhatsApp sharing option
   if (step === 'feedback') {
-    const displayedOrderId = orderDisplayId || orderId
+    const displayedOrderId = orderId
     const whatsappMessage = `Hello GOSH CAFE,\n\n✅ Payment Confirmation\n\nOrder #${displayedOrderId}\nTotal: ${formatMWK(totalCents)}\nPayment Method: ${selectedPaymentMethod === 'bank_transfer' ? 'Bank Transfer' : selectedPaymentMethod === 'airtel_money' ? 'Airtel Money' : 'M\'pamba'}\nTransaction Reference: ${transactionRef}\n\nCustomer: ${customer.customer_name}\nPhone: ${customer.customer_phone}\nEmail: ${customer.customer_email}\n\nFeedback: ${feedbackMessage || 'No feedback provided'}\n\nThank you for choosing GOSH CAFE!`
     const whatsappUrl = `https://wa.me/265995718815?text=${encodeURIComponent(whatsappMessage)}`
 
@@ -182,13 +175,12 @@ export default function Cart() {
             Your payment details have been recorded.
           </p>
           <p style={{ color: '#10b981', fontWeight: 700, marginBottom: '24px' }}>
-            Order #{orderDisplayId || orderId} • {formatMWK(totalCents)}
+            Order #{orderId} • {formatMWK(totalCents)}
           </p>
           
           <div style={{ textAlign: 'left', background: '#f8fafc', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
             <p style={{ fontWeight: 700, marginBottom: '8px' }}>📋 Payment Summary</p>
-            <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Order ID:</strong> #{orderDisplayId || orderId}</p>
-            <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Total:</strong> {formatMWK(totalCents)}</p>
+            <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Order ID:</strong> #{orderId}</p>
             <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Payment Method:</strong> {selectedPaymentMethod === 'bank_transfer' ? '🏦 Bank Transfer' : selectedPaymentMethod === 'airtel_money' ? '📱 Airtel Money' : '💳 M\'pamba'}</p>
             <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Transaction Ref:</strong> {transactionRef}</p>
           </div>
@@ -348,14 +340,13 @@ export default function Cart() {
               </div>
 
               <div className="checkout-field">
-                <label>Email *</label>
+                <label>Email</label>
                 <input
                   type="email"
                   value={customer.customer_email}
                   onChange={(e) => setCustomer({ ...customer, customer_email: e.target.value })}
-                  placeholder="you@example.com"
+                  placeholder="you@example.com (optional)"
                   style={{ padding: '10px 12px', border: '1px solid #d4a373', borderRadius: '8px', width: '100%', boxSizing: 'border-box' }}
-                  required
                 />
               </div>
 

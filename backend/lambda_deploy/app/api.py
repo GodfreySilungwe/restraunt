@@ -225,7 +225,7 @@ def _is_admin(req):
 def admin_list_orders():
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
-    orders = Order.get_all()
+    orders = sorted(Order.get_all(), key=lambda o: o.get('created_at') or '')
     result = []
     for o in orders:
         items = OrderItem.get_by_order(o['id'])
@@ -236,12 +236,36 @@ def admin_list_orders():
             'customer_phone': o['customer_phone'],
             'total_cents': o['total_cents'],
             'status': o['status'],
+            'hidden': o.get('hidden', False),
             'created_at': o['created_at'],
             'items': [
                 {'menu_item_id': it['menu_item_id'], 'qty': it['qty'], 'unit_price_cents': it['unit_price_cents']}
                 for it in items
             ]
         })
+
+    display_counts = {}
+    for order in result:
+        day_key = (order.get('created_at') or '')[:10]
+        display_counts[day_key] = display_counts.get(day_key, 0) + 1
+        order['display_order_id'] = f"{day_key.replace('-', '')}-{display_counts[day_key]:03d}"
+
+    # server-side search via ?q=
+    q = (request.args.get('q') or '').strip().lower()
+    if q:
+        def _matches(o):
+            for field in ('id', 'display_order_id', 'customer_name', 'customer_email', 'customer_phone', 'created_at'):
+                v = o.get(field)
+                if not v:
+                    continue
+                try:
+                    if q in str(v).lower():
+                        return True
+                except Exception:
+                    continue
+            return False
+        result = [o for o in result if _matches(o)]
+
     return jsonify(result)
 
 
@@ -608,9 +632,26 @@ def admin_list_payments():
             'payment_method': p['payment_method'],
             'amount_cents': p['amount_cents'],
             'status': p['status'],
+            'hidden': p.get('hidden', False),
             'created_at': p['created_at'],
             'processed_at': p.get('processed_at')
         })
+
+    q = (request.args.get('q') or '').strip().lower()
+    if q:
+        def _matches(p):
+            for field in ('id', 'order_id', 'transaction_reference', 'customer_name', 'customer_phone', 'created_at'):
+                v = p.get(field)
+                if not v:
+                    continue
+                try:
+                    if q in str(v).lower():
+                        return True
+                except Exception:
+                    continue
+            return False
+        result = [p for p in result if _matches(p)]
+
     return jsonify(result)
 
 
@@ -656,6 +697,28 @@ def admin_update_payment(payment_id):
     except Exception as e:
         print(f"[ERROR] Error updating payment: {str(e)}")
         return jsonify({'error': 'Failed to update payment'}), 500
+
+
+@api_bp.route('/admin/orders/<order_id>/collect', methods=['PUT'])
+def admin_collect_order(order_id):
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    o = Order.get_by_id(str(order_id))
+    if not o:
+        return jsonify({'error': 'Order not found'}), 404
+    if o.get('status') != 'confirmed':
+        return jsonify({'error': 'Only confirmed orders can be collected'}), 400
+    try:
+        Order.set_hidden(order_id, True)
+        try:
+            Order.update_status(order_id, 'collected')
+        except Exception:
+            pass
+        updated = Order.get_by_id(order_id)
+        return jsonify({'id': updated['id'], 'status': updated.get('status'), 'hidden': updated.get('hidden', False)}), 200
+    except Exception as e:
+        print(f"[ERROR] admin_collect_order: {str(e)}")
+        return jsonify({'error': 'Failed to collect order'}), 500
 
 
 # --- Airtel Money integration ------------------------------------------------

@@ -23,6 +23,7 @@ export default function AdminDashboard() {
   const [payments, setPayments] = useState([])
   const [reports, setReports] = useState(null)
   const [orderSearch, setOrderSearch] = useState('')
+  const [paymentSearch, setPaymentSearch] = useState('')
   const [error, setError] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
   const [editingCategory, setEditingCategory] = useState(null)
@@ -47,7 +48,8 @@ export default function AdminDashboard() {
       .catch((e) => setError(e.message))
 
     if (tab === 'orders') {
-      useAdminFetch('admin/orders', adminSecret)
+      const orderQuery = orderSearch.trim() ? `?q=${encodeURIComponent(orderSearch.trim())}` : ''
+      useAdminFetch(`admin/orders${orderQuery}`, adminSecret)
         .then(setOrders)
         .catch((e) => setError(e.message))
       // also fetch payments so we can know which orders are paid
@@ -87,7 +89,8 @@ export default function AdminDashboard() {
         setPromotions([])
       }
     } else if (tab === 'payments') {
-      useAdminFetch('admin/payments', adminSecret)
+      const paymentQuery = paymentSearch.trim() ? `?q=${encodeURIComponent(paymentSearch.trim())}` : ''
+      useAdminFetch(`admin/payments${paymentQuery}`, adminSecret)
         .then(setPayments)
         .catch((e) => setError(e.message))
       useAdminFetch('admin/orders', adminSecret)
@@ -98,7 +101,7 @@ export default function AdminDashboard() {
         .then(setReports)
         .catch((e) => setError(e.message))
     }
-  }, [tab, adminSecret])
+  }, [tab, adminSecret, orderSearch, paymentSearch])
 
   function promptForSecret() {
     const s = window.prompt('Enter admin secret (dev)')
@@ -366,22 +369,18 @@ async function createItem(e) {
   const filteredOrders = orders.filter((order) => {
     const term = orderSearch.trim().toLowerCase()
     if (!term) return true
-    return [order.display_order_id, order.id, order.customer_name, order.customer_email, order.customer_phone]
+    return [order.id, order.display_order_id, order.customer_name, order.customer_email, order.customer_phone, order.created_at]
       .filter(Boolean)
       .some((value) => value.toLowerCase().includes(term))
   })
 
-  const filteredPayments = payments.filter((payment) => payment.status !== 'processed')
-
-  const orderDisplayLookup = React.useMemo(() => {
-    const lookup = new Map()
-    for (const order of orders) {
-      lookup.set(String(order.id), order.display_order_id || String(order.id).slice(0, 8))
-    }
-    return lookup
-  }, [orders])
-
-  const displayOrderIdForPayment = (orderId) => orderDisplayLookup.get(String(orderId)) || String(orderId).slice(0, 8)
+  const filteredPayments = payments.filter((payment) => {
+    const term = paymentSearch.trim().toLowerCase()
+    if (!term) return true
+    return [payment.id, payment.order_id, payment.customer_name, payment.customer_phone, payment.transaction_reference, payment.created_at]
+      .filter(Boolean)
+      .some((value) => value.toLowerCase().includes(term))
+  })
 
 
 
@@ -750,6 +749,23 @@ async function createItem(e) {
                                     </div>
                                   )
                                 })}
+                              </div>
+                              <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+                                {o.status === 'confirmed' && (
+                                  <button onClick={async (e) => {
+                                    e.stopPropagation()
+                                    try {
+                                      await fetchAdmin(`admin/orders/${o.id}/collect`, { method: 'PUT' })
+                                      // refresh orders with current search
+                                      const orderQuery = orderSearch.trim() ? `?q=${encodeURIComponent(orderSearch.trim())}` : ''
+                                      const fresh = await useAdminFetch(`admin/orders${orderQuery}`, adminSecret)
+                                      setOrders(fresh)
+                                      setExpandedOrderId(null)
+                                    } catch (err) {
+                                      setError(String(err))
+                                    }
+                                  }} style={{ padding: '8px 12px', background: '#10b981', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>Collect</button>
+                                )}
                               </div>
                             </div>
                           )}
