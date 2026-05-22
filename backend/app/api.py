@@ -734,11 +734,13 @@ def admin_set_order_hidden(order_id):
         return jsonify({'error': 'Failed to update order hidden flag'}), 500
 
 
-@api_bp.route('/admin/orders/<order_id>/collect', methods=['PUT'])
+@api_bp.route('/admin/orders/<order_id>/collect', methods=['PUT', 'OPTIONS'])
 def admin_collect_order(order_id):
     """Mark a confirmed order as collected (only allowed for confirmed orders).
     This will set the order as hidden and update status to 'collected'.
     """
+    if request.method == 'OPTIONS':
+        return '', 204
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
     o = Order.get_by_id(str(order_id))

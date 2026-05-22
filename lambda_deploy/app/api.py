@@ -692,6 +692,30 @@ def admin_set_order_hidden(order_id):
         return jsonify({'error': 'Failed to update order hidden flag'}), 500
 
 
+@api_bp.route('/admin/orders/<order_id>/collect', methods=['PUT', 'OPTIONS'])
+def admin_collect_order(order_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    o = Order.get_by_id(str(order_id))
+    if not o:
+        return jsonify({'error': 'Order not found'}), 404
+    if o.get('status') != 'confirmed':
+        return jsonify({'error': 'Only confirmed orders can be collected'}), 400
+    try:
+        Order.set_hidden(order_id, True)
+        try:
+            Order.update_status(order_id, 'collected')
+        except Exception:
+            pass
+        updated = Order.get_by_id(order_id)
+        return jsonify({'id': updated['id'], 'status': updated.get('status'), 'hidden': updated.get('hidden', False)}), 200
+    except Exception as e:
+        print(f"[ERROR] admin_collect_order: {str(e)}")
+        return jsonify({'error': 'Failed to collect order'}), 500
+
+
 # --- Admin Reports ---------------------------------------------------------
 @api_bp.route('/admin/reports', methods=['GET'])
 def admin_reports():

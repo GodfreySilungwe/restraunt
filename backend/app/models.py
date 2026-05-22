@@ -150,8 +150,9 @@ class DynamoDBModel:
 
     @staticmethod
     def query_by_prefix(pk_prefix: str, sk_prefix: str = None) -> List[Dict[str, Any]]:
-        """Query items by partition key prefix, optionally with sort key prefix."""
-        key_condition = Key('PK').begins_with(pk_prefix)
+        """Query items by exact partition key, optionally with sort key prefix."""
+        # Use exact partition key equality; DynamoDB only supports begins_with on sort keys.
+        key_condition = Key('PK').eq(pk_prefix)
         if sk_prefix:
             key_condition &= Key('SK').begins_with(sk_prefix)
 

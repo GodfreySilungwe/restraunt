@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 
@@ -11,7 +11,20 @@ def create_app():
 
     # Enable CORS for all routes - allow CloudFront origins
     cors_origins = os.getenv('CORS_ORIGINS', 'https://your-cloudfront-distribution.cloudfront.net').split(',')
-    CORS(app, resources={r"/api/*": {"origins": cors_origins}})
+    # Strip whitespace from origins
+    cors_origins = [origin.strip() for origin in cors_origins if origin.strip()]
+    
+    CORS(app, 
+         resources={r"/api/*": {
+             "origins": cors_origins,
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+             "allow_headers": ["Content-Type", "X-Admin-Secret"],
+             "supports_credentials": False,
+             "max_age": 3600
+         }},
+         send_wildcard=False,
+         vary_header=True
+    )
 
     # Create the DynamoDB table only when the app starts, not on import
     from .models import ensure_table_exists

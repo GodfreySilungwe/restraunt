@@ -382,7 +382,12 @@ async function createItem(e) {
       .some((value) => value.toLowerCase().includes(term))
   })
 
-
+  function displayOrderIdForPayment(orderId) {
+    if (!orderId) return ''
+    const order = orders.find((o) => o.id === orderId)
+    if (order) return order.display_order_id || String(order.id).slice(0, 8)
+    return String(orderId).slice(0, 8)
+  }
 
   return (
     <div style={{ background: 'linear-gradient(135deg, #faf9f8 0%, #f5f1ed 100%)', minHeight: '100vh', paddingBottom: 60 }}>

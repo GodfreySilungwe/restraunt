@@ -699,8 +699,10 @@ def admin_update_payment(payment_id):
         return jsonify({'error': 'Failed to update payment'}), 500
 
 
-@api_bp.route('/admin/orders/<order_id>/collect', methods=['PUT'])
+@api_bp.route('/admin/orders/<order_id>/collect', methods=['PUT', 'OPTIONS'])
 def admin_collect_order(order_id):
+    if request.method == 'OPTIONS':
+        return '', 204
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
     o = Order.get_by_id(str(order_id))
