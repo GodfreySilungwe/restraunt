@@ -23,7 +23,6 @@ export default function AdminDashboard() {
   const [payments, setPayments] = useState([])
   const [reports, setReports] = useState(null)
   const [orderSearch, setOrderSearch] = useState('')
-  const [showHidden, setShowHidden] = useState(false)
   const [error, setError] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
   const [editingCategory, setEditingCategory] = useState(null)
@@ -364,7 +363,7 @@ async function createItem(e) {
     }
   }
 
-  const visibleOrders = orders.filter((order) => !order.hidden).filter((order) => {
+  const filteredOrders = orders.filter((order) => {
     const term = orderSearch.trim().toLowerCase()
     if (!term) return true
     return [order.display_order_id, order.id, order.customer_name, order.customer_email, order.customer_phone]
@@ -372,10 +371,7 @@ async function createItem(e) {
       .some((value) => value.toLowerCase().includes(term))
   })
 
-  const visiblePayments = payments.filter((payment) => !payment.hidden && payment.status !== 'processed')
-
-  const hiddenOrders = orders.filter((o) => o.hidden)
-  const hiddenPayments = payments.filter((p) => p.hidden)
+  const filteredPayments = payments.filter((payment) => payment.status !== 'processed')
 
   const orderDisplayLookup = React.useMemo(() => {
     const lookup = new Map()
@@ -387,35 +383,7 @@ async function createItem(e) {
 
   const displayOrderIdForPayment = (orderId) => orderDisplayLookup.get(String(orderId)) || String(orderId).slice(0, 8)
 
-  async function hideOrder(orderId) {
-    try {
-      await fetchAdmin(`admin/orders/${orderId}/hidden`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hidden: true }) })
-      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, hidden: true } : o)))
-      if (expandedOrderId === orderId) {
-        setExpandedOrderId(null)
-      }
-    } catch (e) {
-      setError(String(e))
-    }
-  }
 
-  async function unhideOrder(orderId) {
-    try {
-      await fetchAdmin(`admin/orders/${orderId}/hidden`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hidden: false }) })
-      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, hidden: false } : o)))
-    } catch (e) {
-      setError(String(e))
-    }
-  }
-
-  async function unhidePayment(paymentId) {
-    try {
-      await fetchAdmin(`admin/payments/${paymentId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hidden: false }) })
-      setPayments((prev) => prev.map((p) => (p.id === paymentId ? { ...p, hidden: false } : p)))
-    } catch (e) {
-      setError(String(e))
-    }
-  }
 
   return (
     <div style={{ background: 'linear-gradient(135deg, #faf9f8 0%, #f5f1ed 100%)', minHeight: '100vh', paddingBottom: 60 }}>
@@ -695,43 +663,13 @@ async function createItem(e) {
                       placeholder="Search orders by ID, customer, or phone"
                       style={{ flex: '1 1 260px', padding: '12px 14px', borderRadius: '12px', border: '1px solid rgba(148,163,184,0.3)', fontSize: '0.95rem' }}
                     />
-                    <div style={{ color: '#64748b', fontSize: '0.95rem' }}>{visibleOrders.length} orders visible</div>
-                    <button type="button" onClick={() => setShowHidden((s) => !s)} style={{ padding: '8px 12px', borderRadius: 10, border: '1px solid rgba(148,163,184,0.2)', background: 'white', cursor: 'pointer' }}>
-                      {showHidden ? 'Hide hidden' : 'Show hidden'}
-                    </button>
+                    <div style={{ color: '#64748b', fontSize: '0.95rem' }}>{filteredOrders.length} orders found</div>
                   </div>
-                  {showHidden && (
-                    <div style={{ marginBottom: 12, padding: 12, background: '#f8fafc', borderRadius: 10, border: '1px solid rgba(148,163,184,0.06)' }}>
-                      <div style={{ marginBottom: 8, fontWeight: 700, color: '#0f172a' }}>Hidden Orders</div>
-                      {hiddenOrders.length === 0 ? <div style={{ color: '#64748b' }}>No hidden orders</div> : (
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          {hiddenOrders.map((o) => (
-                            <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <div style={{ fontFamily: 'monospace', background: 'white', padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(148,163,184,0.06)' }}>{o.display_order_id || o.id.slice(0,8)}</div>
-                              <button onClick={() => unhideOrder(o.id)} style={{ padding: '6px 10px', borderRadius: 8, cursor: 'pointer' }}>Unhide</button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <div style={{ marginTop: 12, marginBottom: 8, fontWeight: 700, color: '#0f172a' }}>Hidden Payments</div>
-                      {hiddenPayments.length === 0 ? <div style={{ color: '#64748b' }}>No hidden payments</div> : (
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          {hiddenPayments.map((p) => (
-                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <div style={{ fontFamily: 'monospace', background: 'white', padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(148,163,184,0.06)' }}>{p.id}</div>
-                              <button onClick={() => unhidePayment(p.id)} style={{ padding: '6px 10px', borderRadius: 8, cursor: 'pointer' }}>Unhide</button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {visibleOrders.length === 0 ? (
+                  {filteredOrders.length === 0 ? (
                     <p style={{ color: '#64748b' }}>No orders matched your search.</p>
                   ) : (
                     <div style={{ display: 'grid', gap: '14px' }}>
-                      {visibleOrders.map((o) => (
+                      {filteredOrders.map((o) => (
                         <div key={o.id} style={{ border: '1px solid rgba(212,163,115,0.2)', borderRadius: '16px', overflow: 'hidden', background: 'white' }}>
                           <div
                             onClick={() => toggleOrderExpanded(o.id)}
@@ -767,7 +705,7 @@ async function createItem(e) {
                               <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Total</div>
                               <div style={{ fontWeight: 700, color: '#10b981' }}>{formatMWK(o.total_cents)}</div>
                             </div>
-                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ textAlign: 'right' }}>
                               <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Status</div>
                               <span style={{
                                 display: 'inline-block',
@@ -780,38 +718,6 @@ async function createItem(e) {
                               }}>
                                 {o.status}
                               </span>
-                              {(() => {
-                                const isPaid = payments.some((p) => String(p.order_id) === String(o.id) && p.status === 'processed')
-                                const isConfirmed = o.status === 'confirmed'
-                                const canCollect = isPaid && isConfirmed
-                                if (canCollect) {
-                                  return (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => { e.stopPropagation(); hideOrder(o.id) }}
-                                      style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        marginTop: '10px',
-                                        padding: '6px 12px',
-                                        background: 'rgba(16, 185, 129, 0.15)',
-                                        color: '#047857',
-                                        border: '1px solid rgba(16, 185, 129, 0.25)',
-                                        borderRadius: '999px',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 700,
-                                        cursor: 'pointer'
-                                      }}
-                                    >
-                                      Collect
-                                    </button>
-                                  )
-                                }
-                                return (
-                                  <button type="button" disabled style={{ marginTop: '10px', padding: '6px 12px', borderRadius: 999, background: 'rgba(148,163,184,0.06)', color: '#94a3b8', border: '1px solid rgba(148,163,184,0.06)' }} title={isPaid ? 'Order must be confirmed before collecting' : 'Awaiting confirmed payment'}>Collect</button>
-                                )
-                              })()}
                             </div>
                           </div>
 
@@ -1159,33 +1065,8 @@ async function createItem(e) {
                 <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)' }}>
                   <h3 style={{ margin: '0 0 20px', fontSize: '1.3rem', fontWeight: 700, color: '#0f172a' }}>💳 Payment Tracking</h3>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '18px' }}>
-                    <div style={{ color: '#64748b', fontSize: '0.95rem' }}>{visiblePayments.length} payments visible</div>
-                    <button type="button" onClick={() => setShowHidden((s) => !s)} style={{ padding: '8px 12px', borderRadius: 10, border: '1px solid rgba(148,163,184,0.2)', background: 'white', cursor: 'pointer' }}>
-                      {showHidden ? 'Hide hidden' : 'Show hidden'}
-                    </button>
+                    <div style={{ color: '#64748b', fontSize: '0.95rem' }}>{filteredPayments.length} payments</div>
                   </div>
-                  {showHidden && (
-                    <div style={{ marginBottom: 20, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid rgba(148,163,184,0.07)' }}>
-                      <div style={{ marginBottom: 10, fontWeight: 700, color: '#0f172a' }}>Hidden Payments</div>
-                      {hiddenPayments.length === 0 ? (
-                        <div style={{ color: '#64748b' }}>No hidden payments</div>
-                      ) : (
-                        <div style={{ display: 'grid', gap: 10 }}>
-                          {hiddenPayments.map((p) => (
-                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 12px', borderRadius: 12, background: 'white', border: '1px solid rgba(148,163,184,0.12)' }}>
-                              <div>
-                                <div style={{ fontWeight: 700, color: '#0f172a' }}>Order #{displayOrderIdForPayment(p.order_id)}</div>
-                                <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{p.transaction_reference || 'No reference provided'}</div>
-                              </div>
-                              <button onClick={() => unhidePayment(p.id)} style={{ padding: '6px 10px', borderRadius: 8, cursor: 'pointer', background: '#e2e8f0', border: 'none', color: '#0f172a' }}>
-                                Unhide
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
                   {payments.length === 0 ? (
                     <p style={{ color: '#64748b' }}>No payments yet</p>
                   ) : (
@@ -1203,7 +1084,7 @@ async function createItem(e) {
                           </tr>
                         </thead>
                         <tbody>
-                          {visiblePayments.map((p) => (
+                          {filteredPayments.map((p) => (
                             <tr key={p.id}>
                               <td style={{ padding: '12px', fontWeight: 700, color: '#d4a373' }}>#{displayOrderIdForPayment(p.order_id)}</td>
                               <td style={{ padding: '12px' }}>

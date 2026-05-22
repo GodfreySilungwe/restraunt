@@ -232,19 +232,9 @@ export default function Cart() {
       <div className="cart-page">
         <div className="cart-wrapper">
           <main className="cart-main card-panel" style={{ maxWidth: '600px', margin: '0 auto' }}>
-            <div className="cart-header" style={{ marginBottom: '24px' }}>
-              <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Confirm Payment</h2>
-              <p style={{ marginTop: '8px', color: '#64748b' }}>
-                Review your order and submit payment details to complete checkout.
-              </p>
-            </div>
 
             <div style={{ marginBottom: '24px', padding: '18px', borderRadius: '16px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                <div>
-                  <p style={{ margin: 0, fontSize: '0.9rem', color: '#94a3b8' }}>Order ID</p>
-                  <p style={{ margin: '4px 0 0', fontWeight: 700, color: '#0f172a' }}>#{orderDisplayId || orderId}</p>
-                </div>
                 <div>
                   <p style={{ margin: 0, fontSize: '0.9rem', color: '#94a3b8' }}>Total</p>
                   <p style={{ margin: '4px 0 0', fontWeight: 700, color: '#0f172a' }}>{formatMWK(totalCents)}</p>
