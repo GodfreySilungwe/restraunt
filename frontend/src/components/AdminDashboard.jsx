@@ -14,6 +14,7 @@ function useAdminFetch(path, adminSecret) {
 
 export default function AdminDashboard() {
   const [adminSecret, setAdminSecret] = useState(localStorage.getItem('admin_secret') || '')
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 760 : false)
   const [tab, setTab] = useState('orders')
   const [orders, setOrders] = useState([])
   const [menuItems, setMenuItems] = useState([])
@@ -103,6 +104,14 @@ export default function AdminDashboard() {
     }
   }, [tab, adminSecret, orderSearch, paymentSearch])
 
+  useEffect(() => {
+    function onResize() {
+      setIsMobile(window.innerWidth < 760)
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
   function promptForSecret() {
     const s = window.prompt('Enter admin secret (dev)')
     if (s) {
@@ -130,6 +139,7 @@ export default function AdminDashboard() {
       }
       throw new Error(`HTTP ${res.status} ${res.statusText} — ${body}`)
     } catch (err) {
+      console.error('fetchAdmin error:', err, 'path:', path)
       throw new Error(`Network error: ${err.message}`)
     }
   }
@@ -368,7 +378,8 @@ async function createItem(e) {
 
   const filteredOrders = orders.filter((order) => {
     const term = orderSearch.trim().toLowerCase()
-    if (!term) return true
+    // hide collected orders and hidden orders by default; searching will include them
+    if (!term) return order.status !== 'collected' && !order.hidden
     return [order.id, order.display_order_id, order.customer_name, order.customer_email, order.customer_phone, order.created_at]
       .filter(Boolean)
       .some((value) => value.toLowerCase().includes(term))
@@ -376,7 +387,8 @@ async function createItem(e) {
 
   const filteredPayments = payments.filter((payment) => {
     const term = paymentSearch.trim().toLowerCase()
-    if (!term) return true
+    // hide verified payments and hidden payments by default; searching will include them
+    if (!term) return payment.status !== 'verified' && !payment.hidden
     return [payment.id, payment.order_id, payment.customer_name, payment.customer_phone, payment.transaction_reference, payment.created_at]
       .filter(Boolean)
       .some((value) => value.toLowerCase().includes(term))
@@ -434,7 +446,7 @@ async function createItem(e) {
 
         {adminSecret && (
           <div>
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '32px', flexWrap: 'wrap', overflowX: 'auto', paddingBottom: 4 }}>
               {['reports','orders','payments','categories','menu','promotions','reservations'].map((tabName) => (
                 <button key={tabName} onClick={() => setTab(tabName)} style={{
                   background: tab === tabName ? 'linear-gradient(135deg, #d4a373 0%, #c9934d 100%)' : 'transparent',
@@ -482,7 +494,7 @@ async function createItem(e) {
 
             {/* Orders Tab */}
             {tab === 'reports' && (
-              <div>
+              <div style={{ overflowX: 'auto' }}>
                 <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)' }}>
                   <h3 style={{ margin: '0 0 20px', fontSize: '1.3rem', fontWeight: 700, color: '#0f172a' }}>📊 Reports</h3>
                   {!reports ? (
@@ -672,14 +684,14 @@ async function createItem(e) {
                   {filteredOrders.length === 0 ? (
                     <p style={{ color: '#64748b' }}>No orders matched your search.</p>
                   ) : (
-                    <div style={{ display: 'grid', gap: '14px' }}>
+                    <div style={{ display: 'grid', gap: '14px', overflowX: 'auto' }}>
                       {filteredOrders.map((o) => (
                         <div key={o.id} style={{ border: '1px solid rgba(212,163,115,0.2)', borderRadius: '16px', overflow: 'hidden', background: 'white' }}>
                           <div
                             onClick={() => toggleOrderExpanded(o.id)}
                             style={{
                               display: 'grid',
-                              gridTemplateColumns: 'minmax(120px, 1fr) minmax(150px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr)',
+                              gridTemplateColumns: isMobile ? '1fr' : 'minmax(120px, 1fr) minmax(150px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr)',
                               gap: '12px',
                               padding: '16px',
                               alignItems: 'center',
@@ -1086,6 +1098,13 @@ async function createItem(e) {
                 <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)' }}>
                   <h3 style={{ margin: '0 0 20px', fontSize: '1.3rem', fontWeight: 700, color: '#0f172a' }}>💳 Payment Tracking</h3>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '18px' }}>
+                    <input
+                      type="search"
+                      value={paymentSearch}
+                      onChange={(e) => setPaymentSearch(e.target.value)}
+                      placeholder="Search payments by order ID, customer, phone, or ref"
+                      style={{ flex: '1 1 260px', padding: '12px 14px', borderRadius: '12px', border: '1px solid rgba(148,163,184,0.3)', fontSize: '0.95rem' }}
+                    />
                     <div style={{ color: '#64748b', fontSize: '0.95rem' }}>{filteredPayments.length} payments</div>
                   </div>
                   {payments.length === 0 ? (
@@ -1117,7 +1136,7 @@ async function createItem(e) {
                                 {p.payment_method === 'airtel_money' && '📱 Airtel Money'}
                                 {p.payment_method === 'mpamba' && '💳 M\'pamba'}
                               </td>
-                              <td style={{ padding: '12px', fontFamily: 'monospace', fontSize: '0.9rem' }}>{p.transaction_reference || '-'}</td>
+                              <td style={{ padding: '12px', fontFamily: 'monospace', fontSize: '0.9rem', maxWidth: 200, wordBreak: 'break-word' }}>{p.transaction_reference || '-'}</td>
                               <td style={{ padding: '12px', fontWeight: 700, color: '#10b981' }}>{formatMWK(p.amount_cents)}</td>
                               <td style={{ padding: '12px' }}>
                                 <span style={{
@@ -1134,7 +1153,7 @@ async function createItem(e) {
                               </td>
                               <td style={{ padding: '12px' }}>
                                 {p.status === 'pending' ? (
-                                  <button onClick={() => updatePaymentStatus(p, 'processed')} style={{
+                                  <button onClick={() => updatePaymentStatus(p, 'verified')} style={{
                                     padding: '6px 12px',
                                     background: 'rgba(16, 185, 129, 0.2)',
                                     color: '#10b981',
@@ -1142,7 +1161,7 @@ async function createItem(e) {
                                     borderRadius: '6px',
                                     cursor: 'pointer'
                                   }}>
-                                    ✓ Process
+                                    ✓ Verify
                                   </button>
                                 ) : (
                                   <button onClick={() => updatePaymentStatus(p, 'pending')} style={{

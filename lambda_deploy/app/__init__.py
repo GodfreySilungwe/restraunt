@@ -9,10 +9,27 @@ def create_app():
     app = Flask(__name__)
     app.config['JSON_SORT_KEYS'] = False
 
-    # Enable CORS for all routes - allow CloudFront origins
-    cors_origins = os.getenv('CORS_ORIGINS', 'https://your-cloudfront-distribution.cloudfront.net').split(',')
-    # Strip whitespace from origins
-    cors_origins = [origin.strip() for origin in cors_origins if origin.strip()]
+    # Enable CORS for all routes - allow CloudFront origins and localhost for development
+    cors_origins_env = os.getenv('CORS_ORIGINS', '')
+    if cors_origins_env:
+        cors_origins = [origin.strip() for origin in cors_origins_env.split(',') if origin.strip()]
+    else:
+        # Default to allowing localhost and common dev ports for development
+        cors_origins = [
+            'http://localhost:5173',
+            'http://localhost:3000',
+            'http://localhost:8080',
+            'http://127.0.0.1:5173',
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:8080',
+        ]
+    
+    # Add CloudFront origin if configured
+    cloudfront_origin = os.getenv('CLOUDFRONT_ORIGIN')
+    if cloudfront_origin:
+        cors_origins.append(cloudfront_origin.strip())
+    
+    print(f"[INFO] CORS origins configured: {cors_origins}")
     
     CORS(app, 
          resources={r"/api/*": {

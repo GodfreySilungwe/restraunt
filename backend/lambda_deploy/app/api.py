@@ -655,7 +655,7 @@ def admin_list_payments():
     return jsonify(result)
 
 
-@api_bp.route('/admin/payments/<int:payment_id>', methods=['PUT', 'PATCH'])
+@api_bp.route('/admin/payments/<payment_id>', methods=['PUT', 'PATCH'])
 def admin_update_payment(payment_id):
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
@@ -664,35 +664,44 @@ def admin_update_payment(payment_id):
         return jsonify({'error': 'Payment not found'}), 404
     
     data = request.get_json() or {}
-    new_status = data.get('status', '').strip()
-    
-    if new_status not in ['pending', 'processed']:
-        return jsonify({'error': 'Invalid status. Must be "pending" or "processed"'}), 400
-    
+    new_status = (data.get('status') or '').strip()
+
+    if new_status and new_status not in ['pending', 'processed', 'verified']:
+        return jsonify({'error': 'Invalid status. Must be "pending", "processed", or "verified"'}), 400
+
     try:
-        update_expr = "SET #status = :status"
-        attr_values = {':status': new_status}
-        attr_names = {'#status': 'status'}
-        
-        if new_status == 'processed':
-            update_expr += ", processed_at = :processed_at"
-            attr_values[':processed_at'] = datetime.utcnow()
-            
-            # Also update the associated order status to confirmed
-            order = Order.get_by_id(payment['order_id'])
-            if order:
-                Order.update_status(order['id'], 'confirmed')
-        
-        DynamoDBModel.update_item(f"PAYMENT#{payment_id}", f"PAYMENT#{payment_id}",
-                                 update_expr, attr_values, attr_names)
-        
-        print(f"[INFO] Payment {payment_id} status updated to {new_status}")
-        
+        processed_at = None
+        if new_status:
+            processed_at = datetime.utcnow() if new_status in ['processed', 'verified'] else None
+            # Update payment status (model handles persistence)
+            Payment.update_status(payment_id, new_status, processed_at)
+
+            # Also update associated order when the payment is confirmed/verified
+            if new_status in ['processed', 'verified']:
+                order = Order.get_by_id(payment['order_id'])
+                if order:
+                    Order.update_status(order['id'], 'confirmed')
+                # Hide confirmed payments by default
+                Payment.set_hidden(payment_id, True)
+
+        # allow toggling hidden flag directly
+        if 'hidden' in data:
+            try:
+                hidden_flag = bool(data.get('hidden'))
+                Payment.set_hidden(payment_id, hidden_flag)
+            except Exception:
+                pass
+
+        updated_payment = Payment.get_by_id(payment_id)
+
+        print(f"[INFO] Payment {payment_id} updated")
+
         return jsonify({
-            'id': payment['id'],
-            'order_id': payment['order_id'],
-            'status': new_status,
-            'processed_at': datetime.utcnow().isoformat() if new_status == 'processed' else None
+            'id': updated_payment['id'],
+            'order_id': updated_payment['order_id'],
+            'status': updated_payment.get('status'),
+            'processed_at': updated_payment.get('processed_at'),
+            'hidden': updated_payment.get('hidden', False)
         }), 200
     except Exception as e:
         print(f"[ERROR] Error updating payment: {str(e)}")

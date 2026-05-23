@@ -73,7 +73,16 @@ def checkout():
                              "SET total_cents = :total",
                              {':total': total})
 
-    return jsonify({'order_id': order['id'], 'status': order['status']})
+    display_order_id = _generate_display_order_id_for(order)
+    return jsonify({'order_id': order['id'], 'display_order_id': display_order_id, 'status': order['status']})
+
+
+def _generate_display_order_id_for(order):
+    day_key = str(order.get('created_at') or '')[:10]
+    if not day_key:
+        return str(order.get('id', ''))[:8]
+    same_day_orders = [o for o in Order.get_all() if str(o.get('created_at') or '')[:10] == day_key]
+    return f"{day_key.replace('-', '')}-{len(same_day_orders):03d}"
 
 
 @api_bp.route('/stripe-checkout', methods=['POST'])
@@ -125,6 +134,7 @@ def manual_checkout():
 
         return jsonify({
             'orderId': order_id,
+            'display_order_id': _generate_display_order_id_for(order),
             'totalCents': order_total_cents,
             'status': 'created'
         }), 200
@@ -134,10 +144,34 @@ def manual_checkout():
         return jsonify({'error': 'Failed to create order'}), 500
 
 
+def _resolve_order_reference(order_reference):
+    if not order_reference:
+        return None, None
+    order_reference = str(order_reference).strip()
+
+    order = Order.get_by_id(order_reference)
+    if order:
+        return order_reference, order
+
+    orders = sorted(Order.get_all(), key=lambda o: o.get('created_at') or '')
+    display_counts = {}
+    for o in orders:
+        day_key = str(o.get('created_at') or '')[:10]
+        if not day_key:
+            continue
+        display_counts[day_key] = display_counts.get(day_key, 0) + 1
+        display_id = f"{day_key.replace('-', '')}-{display_counts[day_key]:03d}"
+        if display_id == order_reference:
+            return o['id'], o
+
+    return None, None
+
+
 @api_bp.route('/payment/submit', methods=['POST'])
 def submit_payment():
     """Submit payment transaction reference for an order."""
     data = request.get_json() or {}
+    raw_order_id = data.get('raw_order_id')
     order_id = data.get('order_id')
     transaction_reference = data.get('transaction_reference', '').strip()
     payment_method = data.get('payment_method', '').strip()
@@ -149,7 +183,8 @@ def submit_payment():
         return jsonify({'error': 'Invalid payment method'}), 400
 
     try:
-        order = Order.get_by_id(str(order_id))
+        target_ref = raw_order_id or order_id
+        order_id, order = _resolve_order_reference(target_ref)
         if not order:
             return jsonify({'error': 'Order not found'}), 404
 
@@ -170,6 +205,7 @@ def submit_payment():
         return jsonify({
             'success': True,
             'orderId': order_id,
+            'display_order_id': _generate_display_order_id_for(order),
             'paymentId': payment['id'],
             'message': 'Payment reference submitted. Please wait for confirmation.'
         }), 200
@@ -247,6 +283,22 @@ def admin_list_orders():
         day_key = (order.get('created_at') or '')[:10]
         display_counts[day_key] = display_counts.get(day_key, 0) + 1
         order['display_order_id'] = f"{day_key.replace('-', '')}-{display_counts[day_key]:03d}"
+
+    # support server-side searching via ?q=term (matches common fields)
+    q = (request.args.get('q') or '').strip().lower()
+    if q:
+        def _matches(o):
+            for field in ('id', 'display_order_id', 'customer_name', 'customer_email', 'customer_phone', 'created_at'):
+                v = o.get(field)
+                if not v:
+                    continue
+                try:
+                    if q in str(v).lower():
+                        return True
+                except Exception:
+                    continue
+            return False
+        result = [o for o in result if _matches(o)]
 
     return jsonify(result)
 
@@ -618,6 +670,22 @@ def admin_list_payments():
             'created_at': p['created_at'],
             'processed_at': p.get('processed_at')
         })
+    # support server-side search via ?q=term
+    q = (request.args.get('q') or '').strip().lower()
+    if q:
+        def _matches(p):
+            for field in ('id', 'order_id', 'transaction_reference', 'customer_name', 'customer_phone', 'created_at'):
+                v = p.get(field)
+                if not v:
+                    continue
+                try:
+                    if q in str(v).lower():
+                        return True
+                except Exception:
+                    continue
+            return False
+        result = [p for p in result if _matches(p)]
+
     return jsonify(result)
 
 
@@ -625,40 +693,70 @@ def admin_list_payments():
 def admin_update_payment(payment_id):
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
-    payment = Payment.get_by_id(str(payment_id))
-    if not payment:
-        return jsonify({'error': 'Payment not found'}), 404
-    data = request.get_json() or {}
-    new_status = (data.get('status') or '').strip()
-
-    if new_status and new_status not in ['pending', 'processed']:
-        return jsonify({'error': 'Invalid status. Must be "pending" or "processed"'}), 400
-
+    
     try:
+        payment_id_str = str(payment_id)
+        payment = Payment.get_by_id(payment_id_str)
+        if not payment:
+            return jsonify({'error': 'Payment not found'}), 404
+        
+        data = request.get_json() or {}
+        new_status = (data.get('status') or '').strip()
+
+        if new_status and new_status not in ['pending', 'processed', 'verified']:
+            return jsonify({'error': 'Invalid status. Must be "pending", "processed", or "verified"'}), 400
+
+        print(f"[INFO] Updating payment {payment_id_str} status to {new_status}")
+        
         processed_at = None
         if new_status:
-            processed_at = datetime.utcnow() if new_status == 'processed' else None
-            Payment.update_status(payment_id, new_status, processed_at)
+            processed_at = datetime.utcnow() if new_status in ['processed', 'verified'] else None
+            
+            try:
+                Payment.update_status(payment_id_str, new_status, processed_at)
+                print(f"[INFO] Payment status updated to {new_status}")
+            except Exception as e:
+                print(f"[ERROR] Failed to update payment status: {str(e)}")
+                raise
 
-            # Also update associated order when processed
-            if new_status == 'processed':
-                order = Order.get_by_id(payment['order_id'])
-                if order:
-                    Order.update_status(order['id'], 'confirmed')
-                # Hide processed payments by default
-                Payment.set_hidden(payment_id, True)
+            # Also update associated order when the payment is confirmed/verified
+            if new_status in ['processed', 'verified']:
+                try:
+                    order = Order.get_by_id(payment['order_id'])
+                    if order:
+                        Order.update_status(order['id'], 'confirmed')
+                        print(f"[INFO] Associated order {order['id']} status updated to confirmed")
+                except Exception as e:
+                    print(f"[WARNING] Failed to update associated order: {str(e)}")
+                
+                # Hide confirmed payments by default
+                try:
+                    Payment.set_hidden(payment_id_str, True)
+                    print(f"[INFO] Payment marked as hidden")
+                except Exception as e:
+                    print(f"[WARNING] Failed to hide payment: {str(e)}")
 
         # allow toggling hidden flag directly
         if 'hidden' in data:
             try:
                 hidden_flag = bool(data.get('hidden'))
-                Payment.set_hidden(payment_id, hidden_flag)
-            except Exception:
-                pass
+                Payment.set_hidden(payment_id_str, hidden_flag)
+                print(f"[INFO] Payment hidden flag set to {hidden_flag}")
+            except Exception as e:
+                print(f"[WARNING] Failed to set hidden flag: {str(e)}")
 
-        updated_payment = Payment.get_by_id(payment_id)
+        updated_payment = Payment.get_by_id(payment_id_str)
+        if not updated_payment:
+            print(f"[WARNING] Could not fetch updated payment {payment_id_str}")
+            return jsonify({
+                'id': payment_id_str,
+                'order_id': payment.get('order_id'),
+                'status': new_status or payment.get('status'),
+                'processed_at': processed_at.isoformat() if processed_at else None,
+                'hidden': data.get('hidden', payment.get('hidden', False))
+            }), 200
 
-        print(f"[INFO] Payment {payment_id} updated")
+        print(f"[INFO] Payment {payment_id_str} updated successfully")
 
         return jsonify({
             'id': updated_payment['id'],
@@ -669,7 +767,9 @@ def admin_update_payment(payment_id):
         }), 200
     except Exception as e:
         print(f"[ERROR] Error updating payment: {str(e)}")
-        return jsonify({'error': 'Failed to update payment'}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Failed to update payment', 'details': str(e)}), 500
 
 
 @api_bp.route('/admin/orders/<order_id>/hidden', methods=['PUT', 'PATCH'])
@@ -694,26 +794,54 @@ def admin_set_order_hidden(order_id):
 
 @api_bp.route('/admin/orders/<order_id>/collect', methods=['PUT', 'OPTIONS'])
 def admin_collect_order(order_id):
+    """Mark a confirmed order as collected (only allowed for confirmed orders).
+    This will set the order as hidden and update status to 'collected'.
+    """
     if request.method == 'OPTIONS':
         return '', 204
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
-    o = Order.get_by_id(str(order_id))
-    if not o:
-        return jsonify({'error': 'Order not found'}), 404
-    if o.get('status') != 'confirmed':
-        return jsonify({'error': 'Only confirmed orders can be collected'}), 400
+    
     try:
-        Order.set_hidden(order_id, True)
+        order_id_str = str(order_id)
+        o = Order.get_by_id(order_id_str)
+        if not o:
+            return jsonify({'error': 'Order not found'}), 404
+        
+        # Only allow collect when order has been confirmed
+        if o.get('status') != 'confirmed':
+            return jsonify({'error': 'Only confirmed orders can be collected'}), 400
+        
+        print(f"[INFO] Collecting order {order_id_str}")
+        
+        # Set order as hidden
         try:
-            Order.update_status(order_id, 'collected')
-        except Exception:
-            pass
-        updated = Order.get_by_id(order_id)
+            Order.set_hidden(order_id_str, True)
+            print(f"[INFO] Order {order_id_str} marked as hidden")
+        except Exception as e:
+            print(f"[ERROR] Failed to set order hidden: {str(e)}")
+            raise
+        
+        # Update status to collected
+        try:
+            Order.update_status(order_id_str, 'collected')
+            print(f"[INFO] Order {order_id_str} status updated to collected")
+        except Exception as e:
+            print(f"[ERROR] Failed to update order status: {str(e)}")
+            raise
+        
+        # Fetch updated order
+        updated = Order.get_by_id(order_id_str)
+        if not updated:
+            print(f"[WARNING] Could not fetch updated order {order_id_str}")
+            return jsonify({'id': order_id_str, 'status': 'collected', 'hidden': True}), 200
+        
         return jsonify({'id': updated['id'], 'status': updated.get('status'), 'hidden': updated.get('hidden', False)}), 200
     except Exception as e:
         print(f"[ERROR] admin_collect_order: {str(e)}")
-        return jsonify({'error': 'Failed to collect order'}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Failed to collect order', 'details': str(e)}), 500
 
 
 # --- Admin Reports ---------------------------------------------------------
@@ -727,9 +855,10 @@ def admin_reports():
 
         total_orders = len(orders)
         total_payments = len(payments)
-        processed_payments = sum(1 for p in payments if p.get('status') == 'processed')
+        processed_statuses = {'processed', 'verified'}
+        processed_payments = sum(1 for p in payments if p.get('status') in processed_statuses)
         pending_payments = sum(1 for p in payments if p.get('status') == 'pending')
-        revenue_cents = sum(int(p.get('amount_cents', 0)) for p in payments if p.get('status') == 'processed')
+        revenue_cents = sum(int(p.get('amount_cents', 0)) for p in payments if p.get('status') in processed_statuses)
 
         def parse_date(value):
             if not value:
@@ -763,7 +892,7 @@ def admin_reports():
             processed_at = payment.get('processed_at') or payment.get('created_at')
             payment_date = parse_date(processed_at)
             amount = int(payment.get('amount_cents', 0))
-            if payment.get('status') == 'processed':
+            if payment.get('status') in processed_statuses:
                 if payment_date:
                     sales_by_day[str(payment_date)]['revenue_cents'] += amount
                 payment_method_counts[method]['count'] += 1
@@ -830,7 +959,9 @@ def admin_reports():
         }), 200
     except Exception as e:
         print(f"[ERROR] admin_reports: {str(e)}")
-        return jsonify({'error': 'Failed to compute reports'}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Failed to compute reports', 'details': str(e)}), 500
 
 
 # --- Airtel Money integration ------------------------------------------------

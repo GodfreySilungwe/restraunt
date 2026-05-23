@@ -151,12 +151,14 @@ class DynamoDBModel:
     @staticmethod
     def query_by_prefix(pk_prefix: str, sk_prefix: str = None) -> List[Dict[str, Any]]:
         """Query items by partition key prefix, optionally with sort key prefix."""
-        key_condition = Key('PK').begins_with(pk_prefix)
+        # DynamoDB Query requires the partition key to be an equality condition.
+        # Here we use a scan with begins_with for small datasets, since our single-table design stores entities by prefix.
+        filter_expr = Attr('PK').begins_with(pk_prefix)
         if sk_prefix:
-            key_condition &= Key('SK').begins_with(sk_prefix)
+            filter_expr = filter_expr & Attr('SK').begins_with(sk_prefix)
 
         try:
-            response = table.query(KeyConditionExpression=key_condition)
+            response = table.scan(FilterExpression=filter_expr)
             items = response.get('Items', [])
             return [DynamoDBModel._process_item_from_dynamodb(item) for item in items]
         except Exception as e:
@@ -422,6 +424,15 @@ class Order:
             {'#status': 'status'}
         )
 
+    @staticmethod
+    def set_hidden(order_id: str, hidden: bool) -> None:
+        DynamoDBModel.update_item(
+            f'ORDER#{order_id}', f'ORDER#{order_id}',
+            "SET #hidden = :hidden",
+            {':hidden': hidden},
+            {'#hidden': 'hidden'}
+        )
+
 class OrderItem:
     @staticmethod
     def create(order_id: str, menu_item_id: str, qty: int, unit_price_cents: int) -> Dict[str, Any]:
@@ -645,6 +656,15 @@ class Payment:
         DynamoDBModel.update_item(
             f'PAYMENT#{payment_id}', f'PAYMENT#{payment_id}',
             update_expr, attr_values, attr_names
+        )
+
+    @staticmethod
+    def set_hidden(payment_id: str, hidden: bool) -> None:
+        DynamoDBModel.update_item(
+            f'PAYMENT#{payment_id}', f'PAYMENT#{payment_id}',
+            "SET #hidden = :hidden",
+            {':hidden': hidden},
+            {'#hidden': 'hidden'}
         )
 
 class Subscriber:

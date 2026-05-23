@@ -31,6 +31,7 @@ export default function Cart() {
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState('cart')
   const [orderId, setOrderId] = useState(null)
+  const [displayOrderId, setDisplayOrderId] = useState(null)
   const [totalCents, setTotalCents] = useState(0)
   const [customer, setCustomer] = useState({ customer_name: '', customer_email: '', customer_phone: '' })
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null)
@@ -85,12 +86,13 @@ export default function Cart() {
       }
 
       const resolvedOrderId = data.orderId || data.order_id
+      const resolvedDisplayId = data.display_order_id || data.displayOrderId || null
       if (!resolvedOrderId) {
         setError('Invalid response from server. Please try again.')
         return
       }
-
       setOrderId(resolvedOrderId)
+      setDisplayOrderId(resolvedDisplayId)
       setTotalCents(data.totalCents)
       setStep('payment')
       setSelectedPaymentMethod(null)
@@ -100,6 +102,56 @@ export default function Cart() {
       setError('Network error. Please check your connection and try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const createAndDownloadReceipt = (displayId, amountCents, paymentMethod, transactionRef, customerName, paymentDateIso, collectionDateIso) => {
+    try {
+      const width = 800
+      const height = 580
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      // background
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, width, height)
+      // header
+      ctx.fillStyle = '#0f172a'
+      ctx.font = '22px sans-serif'
+      ctx.fillText('GOSH CAFE - Payment Receipt', 24, 48)
+      ctx.font = '18px sans-serif'
+      ctx.fillText(`Order: ${displayId}`, 24, 96)
+      ctx.fillText(`Amount: ${formatMWK(amountCents)}`, 24, 132)
+      ctx.fillText(`Payment Method: ${paymentMethod}`, 24, 168)
+      ctx.fillText(`Transaction Ref: ${transactionRef}`, 24, 204)
+      ctx.fillText(`Customer: ${customerName}`, 24, 240)
+      // dates
+      const paymentDateStr = paymentDateIso ? new Date(paymentDateIso).toLocaleString() : new Date().toLocaleString()
+      const collectionDateStr = collectionDateIso ? new Date(collectionDateIso).toLocaleString() : 'Pending'
+      ctx.font = '16px sans-serif'
+      ctx.fillStyle = '#0f172a'
+      ctx.fillText(`Payment Date: ${paymentDateStr}`, 24, 276)
+      ctx.fillText(`Collection Date: ${collectionDateStr}`, 24, 308)
+      // note
+      ctx.font = '16px sans-serif'
+      ctx.fillStyle = '#b91c1c'
+      ctx.fillText('NOTE: to be verified during collection', 24, 360)
+      // timestamp
+      ctx.font = '12px sans-serif'
+      ctx.fillStyle = '#6b7280'
+      ctx.fillText(new Date().toLocaleString(), 24, height - 28)
+
+      const dataUrl = canvas.toDataURL('image/png')
+      const a = document.createElement('a')
+      a.href = dataUrl
+      const safeId = String(displayId || orderId || 'receipt').replace(/[^\w\-]/g, '')
+      a.download = `receipt-${safeId}.png`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    } catch (err) {
+      console.error('Receipt generation failed:', err)
     }
   }
 
@@ -145,7 +197,15 @@ export default function Cart() {
       
       // Payment successful if status is 200 OR data contains success/orderId/paymentId
       if (res.status === 200 || res.ok || data.success === true || data.orderId || data.paymentId) {
-        // Clear cart and move to feedback page (do NOT clear cart twice)
+        // Generate and download a PNG receipt for the user, then clear cart and move to feedback
+        const receiptId = displayOrderId || data.display_order_id || data.orderId || orderId
+        try {
+          const paymentDateIso = data.processed_at || data.created_at || new Date().toISOString()
+          const collectionDateIso = data.collected_at || null
+          createAndDownloadReceipt(receiptId, data.totalCents || totalCents, selectedPaymentMethod, transactionRef.trim(), customer.customer_name || '', paymentDateIso, collectionDateIso)
+        } catch (e) {
+          console.error('Receipt step failed:', e)
+        }
         clearCart()
         setStep('feedback')
       } else {
@@ -162,7 +222,7 @@ export default function Cart() {
 
   // Success page with WhatsApp sharing option
   if (step === 'feedback') {
-    const displayedOrderId = orderId
+    const displayedOrderId = displayOrderId || orderId
     const whatsappMessage = `Hello GOSH CAFE,\n\n✅ Payment Confirmation\n\nOrder #${displayedOrderId}\nTotal: ${formatMWK(totalCents)}\nPayment Method: ${selectedPaymentMethod === 'bank_transfer' ? 'Bank Transfer' : selectedPaymentMethod === 'airtel_money' ? 'Airtel Money' : 'M\'pamba'}\nTransaction Reference: ${transactionRef}\n\nCustomer: ${customer.customer_name}\nPhone: ${customer.customer_phone}\nEmail: ${customer.customer_email}\n\nFeedback: ${feedbackMessage || 'No feedback provided'}\n\nThank you for choosing GOSH CAFE!`
     const whatsappUrl = `https://wa.me/265995718815?text=${encodeURIComponent(whatsappMessage)}`
 
@@ -175,12 +235,12 @@ export default function Cart() {
             Your payment details have been recorded.
           </p>
           <p style={{ color: '#10b981', fontWeight: 700, marginBottom: '24px' }}>
-            Order #{orderId} • {formatMWK(totalCents)}
+            Order #{displayedOrderId} • {formatMWK(totalCents)}
           </p>
           
           <div style={{ textAlign: 'left', background: '#f8fafc', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
             <p style={{ fontWeight: 700, marginBottom: '8px' }}>📋 Payment Summary</p>
-            <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Order ID:</strong> #{orderId}</p>
+            <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Order ID:</strong> #{displayedOrderId}</p>
             <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Payment Method:</strong> {selectedPaymentMethod === 'bank_transfer' ? '🏦 Bank Transfer' : selectedPaymentMethod === 'airtel_money' ? '📱 Airtel Money' : '💳 M\'pamba'}</p>
             <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Transaction Ref:</strong> {transactionRef}</p>
           </div>
